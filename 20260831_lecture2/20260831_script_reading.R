@@ -85,3 +85,79 @@ IQR(salary)/sd(salary)
 # 1.25 < 1.35 - heavy tailed distribution
 
 
+# OUTLIERS ---------------------------------------------------------------------
+# Identify a potential outlier (a datum that is far away) if it is 1.5x IQR
+# Better to look at this check as identifying data that is far away\
+
+quantile(salary, 0.75) # Q3 = 91671.25
+IQR(salary) # IQR = 49378.75
+1.5 * IQR(salary) # 1.5x IQR = 74068.12
+
+# set upper bound to determine 1.5x IQR
+upper_bound <- quantile(salary, 0.75) + 1.5 * IQR(salary)
+upper_bound # 165739.4, if a datum is beyond this, it is a potential outlier
+sum(salary > upper_bound) # 6 data are beyond the upper bound
+
+
+
+# VISUALIZATIONS ---------------------------------------------------------------
+# Create data
+grp <- sample(c(0, 1), 400, replace = TRUE)
+commute <- rnorm(400, mean = ifelse(grp == 1, 72, 34), sd = 6)
+summary(commute)
+sd(commute)
+
+
+# Histogram
+# Histograms show shape of data, but hide outliers/tails depending on bin width and bar height
+hist(commute, breaks = 30, col = "gray85", border = "white",
+     main = "", xlab = "one-way commute (minutes)")
+
+# Box plot
+# boxplots show outliers, but hide shape (can't tell that distribution is bimodal)
+boxplot(commute, horizontal = TRUE, col = "gray85",
+        xlab = "one-way commute (minutes)")
+
+
+# Using density() to smooth a histogram
+hist(commute, breaks = 30, freq = FALSE, col = "gray90", border = "white",
+     main = "", xlab = "one-way commute (minutes)")
+lines(density(commute), lwd = 3)
+
+
+
+# Summary/Descriptive Stats Function -------------------------------------------
+set.seed(11)
+n <- 200
+staff <- data.frame(
+  id     = 1:n,
+  dept   = sample(c("eng", "ops", "sales"), n, replace = TRUE),
+  salary = round(rlnorm(n, 11.2, 0.35)),
+  years  = sample(0:30, n, replace = TRUE)
+)
+staff$salary[sample(n, 24)] <- NA
+staff$rating <- NA_real_          # a column somebody added and never filled
+
+# profile() function to generate summary and descriptive stats
+profile <- function(df) {
+  data.frame(
+    type    = sapply(df, function(x) class(x)[1]),
+    missing = sapply(df, function(x) sum(is.na(x))),
+    unique  = sapply(df, function(x) length(unique(x[!is.na(x)]))),
+    min     = sapply(df, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else NA),
+    median  = sapply(df, function(x) if (is.numeric(x)) median(x, na.rm = TRUE) else NA),
+    max     = sapply(df, function(x) if (is.numeric(x)) max(x, na.rm = TRUE) else NA)
+  )
+}
+
+profile(staff) # call function
+
+
+
+
+
+
+
+
+
+
