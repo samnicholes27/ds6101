@@ -1,0 +1,110 @@
+---
+title: "Homework 1"
+subtitle: "DATS 6101 · Fall 2026"
+author: "Sam Nicholes"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r data}
+# install.packages("nycflights13")   # run once, then leave this commented out
+library(nycflights13)
+data(flights)
+```
+
+<!--
+This skeleton exists so you spend your time on the analysis rather than on
+YAML. It is deliberately thin: the headings are here, the answers are not, and
+deciding what code belongs under each heading is part of what is being graded.
+
+Before you submit: Session > Restart R, then Knit. If it does not knit from a
+clean session, it will not knit on my machine either.
+
+Every number you state in prose must come from inline R code -- like this:
+`r nrow(flights)` rows -- and not be typed by hand.
+-->
+
+# Part 1 · The question (8 points)
+
+*A S.M.A.R.T. question this file can answer, and one it cannot. No code.*
+
+**A question this file can answer.**
+
+**A question it cannot, and what specifically blocks it.**
+
+# Part 2 · One variable, honestly (13 points)
+
+## (a) Five numbers and the IQR
+
+## (b) Mean against median, checked with a histogram
+
+## (c) The proportion arriving before the mean
+
+## (d) IQR against the standard deviation
+
+# Part 3 · The flights that are not there (23 points)
+
+## (a) How many, and what percentage
+
+## (b) The two mechanisms
+
+## (c) What `na.rm = TRUE` actually describes
+
+*Your sentence starts "The average arrival delay of..."*
+
+## (d) Is the deletion carrier-neutral?
+
+*Answer with a number.*
+
+## (e) What you would do about it
+
+# Part 4 · A ranking that is not what it looks like (18 points)
+
+## (a) Carriers by mean arrival delay
+
+## (b) What should stop you in the top five
+
+## (c) Which panel this is
+
+## (d) A rule, applied
+
+# Part 5 · A plot that misleads, and its honest twin (13 points)
+
+## (a) The misleading plot
+
+## (b) The honest plot
+
+## (c) What changed, and which change did the work
+
+# Part 6 · Who is missing (15 points)
+
+*One paragraph, at most 150 words. Three mechanisms, each with a direction.*
+
+# AI disclosure
+
+<!--
+Keep ONE of the two blocks below and delete the other.
+"I did not use an AI assistant" is always acceptable and earns full marks.
+-->
+
+## Prompt log
+
+## Critique
+
+*150-300 words. Either name something the assistant got wrong and what it would
+have cost, or show the prompts you used trying to break it when it held up.
+Both earn full marks.*
+
+<!-- OR, replacing both sections above:
+
+I did not use an AI assistant on this assignment.
+
+-->
