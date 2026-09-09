@@ -18,3 +18,19 @@ mean(diseased[positive_test == 1])
 # P(D|+)
 # Positive Predictive Value, PPV)
 
+# Baye's Rule
+prev <- 0.005 # P(D)
+sens <- 0.99 # P(+|D)
+spec <- 0.95 # P(-|ND)
+ppv <- sens * prev / (sens * prev + (1 - spec) * (1 - prev))
+round(ppv, 4)
+
+rbind(
+  "has disease"      = c(positive = 100000 * prev * sens,
+                         negative = 100000 * prev * (1 - sens)),
+  "does not have it" = c(positive = 100000 * (1 - prev) * (1 - spec),
+                         negative = 100000 * (1 - prev) * spec)
+)
+
+
+
