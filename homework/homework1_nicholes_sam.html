@@ -11,7 +11,7 @@
 
 <meta name="author" content="Sam Nicholes" />
 
-<meta name="date" content="2026-09-09" />
+<meta name="date" content="2026-09-10" />
 
 <title>Homework 1</title>
 
@@ -1570,7 +1570,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Homework 1</h1>
 <h3 class="subtitle">DATS 6101 · Fall 2026</h3>
 <h4 class="author">Sam Nicholes</h4>
-<h4 class="date">2026-09-09</h4>
+<h4 class="date">2026-09-10</h4>
 
 </div>
 
@@ -1660,9 +1660,38 @@ IQR(flights$arr_delay, na.rm = TRUE) / sd(flights$arr_delay, na.rm = TRUE))</cod
 <h1>Part 3 · The flights that are not there (23 points)</h1>
 <div id="a-how-many-and-what-percentage" class="section level2">
 <h2>(a) How many, and what percentage</h2>
+<p>There are 9430 rows that are missing values from arr_delay - 2.8% of
+all observations.</p>
+<pre class="r"><code>sum(is.na(flights$arr_delay))</code></pre>
+<pre><code>## [1] 9430</code></pre>
+<pre class="r"><code>mean(is.na(flights$arr_delay))</code></pre>
+<pre><code>## [1] 0.02800081</code></pre>
 </div>
 <div id="b-the-two-mechanisms" class="section level2">
 <h2>(b) The two mechanisms</h2>
+<p>There are a total of 9430 missing arrival times, and 8255 missing
+departure times.</p>
+<ul>
+<li>Mechanism 1: if the flight has a missing arrival and departure, the
+flight was cancelled.</li>
+<li>Mechanism 2: if the flight has a missing arrival, the flight was
+rerouted.</li>
+</ul>
+<pre class="r"><code># total missing values for arrivals and departures
+c(miss_arr = sum(is.na(flights$arr_delay)),
+  miss_dep = sum(is.na(flights$dep_delay)))</code></pre>
+<pre><code>## miss_arr miss_dep 
+##     9430     8255</code></pre>
+<pre class="r"><code>table(&quot;miss_arr&quot; = is.na(flights$arr_delay),
+      &quot;miss_dep&quot; = is.na(flights$dep_delay))</code></pre>
+<pre><code>##         miss_dep
+## miss_arr  FALSE   TRUE
+##    FALSE 327346      0
+##    TRUE    1175   8255</code></pre>
+<pre class="r"><code># Missing none is a completed flight
+# Missing both is a cancelled flight
+# Missing arrival only is a reroute in the flight
+# Missing departure only isn&#39;t possible</code></pre>
 </div>
 <div id="c-what-na.rm-true-actually-describes" class="section level2">
 <h2>(c) What <code>na.rm = TRUE</code> actually describes</h2>

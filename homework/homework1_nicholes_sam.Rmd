@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```{r data}
 # install.packages("nycflights13")   # run once, then leave this commented out
 library(nycflights13)
+library(tidyverse)
 data(flights)
 ```
 
@@ -101,18 +102,65 @@ IQR(flights$arr_delay, na.rm = TRUE) / sd(flights$arr_delay, na.rm = TRUE))
 # Part 3 · The flights that are not there (23 points)
 
 ## (a) How many, and what percentage
+There are 9430 rows that are missing values from arr_delay - 2.8% of all observations.
+
+```{r}
+sum(is.na(flights$arr_delay))
+mean(is.na(flights$arr_delay))
+```
+
 
 ## (b) The two mechanisms
+There are a total of 9430 missing arrival times, and 8255 missing departure times.
+
+- Mechanism 1: if the flight has a missing arrival and departure, the flight was cancelled.
+- Mechanism 2: if the flight has a missing arrival, the flight was rerouted.
+
+```{r}
+# total missing values for arrivals and departures
+c(miss_arr = sum(is.na(flights$arr_delay)),
+  miss_dep = sum(is.na(flights$dep_delay)))
+
+table("miss_arr" = is.na(flights$arr_delay),
+      "miss_dep" = is.na(flights$dep_delay))
+# Missing none is a completed flight
+# Missing both is a cancelled flight
+# Missing arrival only is a reroute in the flight
+# Missing departure only isn't possible
+
+```
+
 
 ## (c) What `na.rm = TRUE` actually describes
+The average arrival delay of planes that arrived at the planned destination is ~6.89 minutes.
+```{r}
+mean(flights$arr_delay, na.rm = TRUE)
+```
 
-*Your sentence starts "The average arrival delay of..."*
 
 ## (d) Is the deletion carrier-neutral?
 
-*Answer with a number.*
+- Q) Does na.rm = TRUE treat all carriers equally?
+- A) No, na.rm = TRUE does not treat all carriers equally. The function, na.rm = TRUE, removes missing values before the mean is calculated, only those with a recorded arrival time will contribute to the mean. For example, UA is missing 9.5% of arrival times compared to UA who is only missing 3.6% of arrival times. This discrepancy in missingness will contribute to the the mean arrival delays for each.
+```{r}
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::summarise(
+    n = n(),
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    per_na_arr_time = mean(is.na(arr_time) * 100)
+  ) %>%
+  dplyr::arrange(desc(per_na_arr_time))
+```
+
 
 ## (e) What you would do about it
+
+
+
+
+
+
 
 # Part 4 · A ranking that is not what it looks like (18 points)
 
