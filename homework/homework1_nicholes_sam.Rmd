@@ -43,7 +43,7 @@ Every number you state in prose must come from inline R code -- like this:
 
 # Part 2 · One variable, honestly (13 points)
 
-## (a) Five numbers and the IQR
+## (2a) Five numbers and the IQR
 ```{r}
 summary(flights$arr_delay)
 cat("IQR:", IQR(flights$arr_delay, na.rm = TRUE), "\n")
@@ -52,7 +52,7 @@ cat("SD:", sd(flights$arr_delay, na.rm = TRUE), "\n")
 
 
 
-## (b) Mean against median, checked with a histogram
+## (2b) Mean against median, checked with a histogram
 The mean (~6.9), is larger than the median (-5). This is indicative of a right-skewed distribution.
 ```{r}
 
@@ -78,7 +78,7 @@ legend("right",
 ```
 
 
-## (c) The proportion arriving before the mean
+## (2c) The proportion arriving before the mean
 Roughly, 67.7% of flights arrive earlier than the average flight delay time, which tells us that most of the flights arrive nearly on time if not early.
 ```{r}
 # proportion of flights that arrive earlier than the mean arrival delay
@@ -89,7 +89,7 @@ cat("flight delays < mean:",
 ```
 
 
-## (d) IQR against the standard deviation
+## (2d) IQR against the standard deviation
 The IQR/SD ratio is 0.69, this indicates a distribution with heavy tails.
 ```{r}
 cat("IQR/SD:",
@@ -101,7 +101,7 @@ IQR(flights$arr_delay, na.rm = TRUE) / sd(flights$arr_delay, na.rm = TRUE))
 
 # Part 3 · The flights that are not there (23 points)
 
-## (a) How many, and what percentage
+## (3a) How many, and what percentage
 There are 9430 rows that are missing values from arr_delay - 2.8% of all observations.
 
 ```{r}
@@ -110,7 +110,7 @@ mean(is.na(flights$arr_delay))
 ```
 
 
-## (b) The two mechanisms
+## (3b) The two mechanisms
 There are a total of 9430 missing arrival times, and 8255 missing departure times.
 
 - Mechanism 1: if the flight has a missing arrival and departure, the flight was cancelled.
@@ -131,17 +131,17 @@ table("miss_arr" = is.na(flights$arr_delay),
 ```
 
 
-## (c) What `na.rm = TRUE` actually describes
+## (3c) What `na.rm = TRUE` actually describes
 The average arrival delay of planes that arrived at the planned destination is ~6.89 minutes.
 ```{r}
 mean(flights$arr_delay, na.rm = TRUE)
 ```
 
 
-## (d) Is the deletion carrier-neutral?
+## (3d) Is the deletion carrier-neutral?
 
 - Q) Does na.rm = TRUE treat all carriers equally?
-- A) No, na.rm = TRUE does not treat all carriers equally. The function, na.rm = TRUE, removes missing values before the mean is calculated, only those with a recorded arrival time will contribute to the mean. For example, UA is missing 9.5% of arrival times compared to UA who is only missing 3.6% of arrival times. This discrepancy in missingness will contribute to the the mean arrival delays for each.
+- A) No, na.rm = TRUE does not treat all carriers equally. The function, na.rm = TRUE, removes missing values before the mean is calculated, only those with a recorded arrival time will contribute to the mean. For example, UA is missing 9.5% of arrival times compared to UA who is only missing 3.6% of arrival times. This discrepancy in missing-ness will contribute to the the mean arrival delays for each.
 ```{r}
 flights %>%
   dplyr::group_by(carrier) %>%
@@ -154,9 +154,7 @@ flights %>%
 ```
 
 
-## (e) What you would do about it
-
-
+## (3e) What you would do about it
 
 
 
@@ -164,21 +162,91 @@ flights %>%
 
 # Part 4 · A ranking that is not what it looks like (18 points)
 
-## (a) Carriers by mean arrival delay
+## (4a) Carriers by mean arrival delay
+```{r}
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::summarise(
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE)
+  ) %>%
+  dplyr::arrange(desc(mean_arr_delay))
+```
 
-## (b) What should stop you in the top five
+## (4b) What should stop you in the top five
+Of the flights that operated out of New York airports, JFK and LGA, the carrier F9 had the largest mean arrival delay but is missing the fewest arrival times. Compare this to OO which had the smallest mean arrival dealy but is missing the most arrival times. At face value this is showing that OO had more reroutes despite a more timely arrival average, and F9 arrived at the scheduled destination but arrived later on average. Again, this shows how missing values can bias statistics and a subsequent interpretation of the data.
 
-## (c) Which panel this is
+```{r}
 
-## (d) A rule, applied
+table(flights$carrier, flights$origin)
+
+flights %>%
+  dplyr::filter(origin %in% c("JFK", "LGA")) %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::filter(carrier %in% c("F9", "FL", "EV", "YV", "OO")) %>%
+  dplyr::summarise(
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    per_na_arr_time = mean(is.na(arr_time) * 100)
+  ) %>%
+  dplyr::arrange(desc(mean_arr_delay))
+
+
+
+```
+
+
+## (4c) Which panel this is
+I would say that panels C and D from "What correlation cannot see" illustrate what is happening with missing-ness in the flight data. Rather than showing a complete picture, select data points (when unaccounted for in an analysis) skew the statistics. Missing data allow existing data to push the statistics in a direction that is not representative of reality.
+
+
+## (4d) A rule, applied
+```{r}
+set.seed(27)
+# 2727
+
+min_n <- flights %>%
+  dplyr::count(carrier) %>%
+  dplyr::pull(n) %>%
+  min()
+
+rand_flights <- flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::slice_sample(n = min_n) %>%
+  dplyr::ungroup()
+
+
+rand_flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::summarise(
+    n = n(),
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    per_na_arr_time = mean(is.na(arr_time) * 100)
+  ) %>%
+  dplyr::arrange(desc(per_na_arr_time))
+
+
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::summarise(
+    n = n(),
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    per_na_arr_time = mean(is.na(arr_time) * 100)
+  ) %>%
+  dplyr::arrange(desc(per_na_arr_time))
+
+
+
+```
+
+
+
 
 # Part 5 · A plot that misleads, and its honest twin (13 points)
 
-## (a) The misleading plot
+## (5a) The misleading plot
 
-## (b) The honest plot
+## (5b) The honest plot
 
-## (c) What changed, and which change did the work
+## (5c) What changed, and which change did the work
 
 # Part 6 · Who is missing (15 points)
 
