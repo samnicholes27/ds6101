@@ -37,9 +37,9 @@ Every number you state in prose must come from inline R code -- like this:
 
 *A S.M.A.R.T. question this file can answer, and one it cannot. No code.*
 
-**A question this file can answer.**
+**A question this file can answer.**: Is distance to the destination airport a significant predictor of an arrival delay?
 
-**A question it cannot, and what specifically blocks it.**
+**A question it cannot, and what specifically blocks it.**: Is total aircraft weight (aircraft + passengers + luggage) a significant predictor of air time?
 
 # Part 2 · One variable, honestly (13 points)
 
@@ -155,7 +155,7 @@ flights %>%
 
 
 ## (3e) What you would do about it
-
+I would keep the rows with missing values, but use a binary/boolean outcome for a timely arrival (1, 0; yes, no) and use that to create a score. A customer is ultimately more interested in the question "If I fly with this carrier, will I arrive on time?" when choosing a carrier, rather than "By how much will I be late?". Customers only worry about "By how much?" after they have bought a ticket and are delayed en route, essentially.
 
 
 
@@ -173,21 +173,20 @@ flights %>%
 ```
 
 ## (4b) What should stop you in the top five
-Of the flights that operated out of New York airports, JFK and LGA, the carrier F9 had the largest mean arrival delay but is missing the fewest arrival times. Compare this to OO which had the smallest mean arrival dealy but is missing the most arrival times. At face value this is showing that OO had more reroutes despite a more timely arrival average, and F9 arrived at the scheduled destination but arrived later on average. Again, this shows how missing values can bias statistics and a subsequent interpretation of the data.
+Among the top five, OO only had 32 flights with just over 9% of those flights with a missing arrival time. This is not a large sample relative to the other carriers.
 
 ```{r}
 
-table(flights$carrier, flights$origin)
-
 flights %>%
-  dplyr::filter(origin %in% c("JFK", "LGA")) %>%
   dplyr::group_by(carrier) %>%
   dplyr::filter(carrier %in% c("F9", "FL", "EV", "YV", "OO")) %>%
   dplyr::summarise(
+    n = n(),
     mean_arr_delay = mean(arr_delay, na.rm = TRUE),
     per_na_arr_time = mean(is.na(arr_time) * 100)
   ) %>%
   dplyr::arrange(desc(mean_arr_delay))
+
 
 
 
@@ -199,21 +198,27 @@ I would say that panels C and D from "What correlation cannot see" illustrate wh
 
 
 ## (4d) A rule, applied
-```{r}
-set.seed(27)
-# 2727
+An quick and easy solution is to draw a random sample from each flight. This data set is essentially a total population of flights in New York from 2013, so it's not unreasonable to take a random sample from the population and make inferences for New York-based flights.
+Some drawbacks to this method is that it's limited by the carrier with the fewest number of total flights during 2013 which is OO with 32 total flights. While this allows us to make inferences and reduce the missing values, the limitation to how big the random sample can be vs should be may not be "fair" to other carriers.
 
+```{r}
+set.seed(2727)
+
+table(flights$carrier)
+
+# pull the maximum number of flights determined by the carrier with the fewest flights in 2013
 min_n <- flights %>%
   dplyr::count(carrier) %>%
   dplyr::pull(n) %>%
   min()
 
+# select a random sample of flights
 rand_flights <- flights %>%
   dplyr::group_by(carrier) %>%
   dplyr::slice_sample(n = min_n) %>%
   dplyr::ungroup()
 
-
+# Mean arrival flight delay for random sample
 rand_flights %>%
   dplyr::group_by(carrier) %>%
   dplyr::summarise(
@@ -223,7 +228,7 @@ rand_flights %>%
   ) %>%
   dplyr::arrange(desc(per_na_arr_time))
 
-
+# Mean arrival flight delay for total data set
 flights %>%
   dplyr::group_by(carrier) %>%
   dplyr::summarise(
@@ -232,8 +237,6 @@ flights %>%
     per_na_arr_time = mean(is.na(arr_time) * 100)
   ) %>%
   dplyr::arrange(desc(per_na_arr_time))
-
-
 
 ```
 
@@ -244,9 +247,36 @@ flights %>%
 
 ## (5a) The misleading plot
 
+```{r}
+# Select flights based on large difference in spread
+flights %>%
+  dplyr::filter(carrier %in% c("AS", "OO", "YV", "HA", "AA", "DL", "MQ")) %>%
+  ggplot(aes(x = carrier,
+             y = arr_delay)) +
+  geom_boxplot() +
+  coord_cartesian(ylim = c(0, 30)) + # Limit axes that are shown on plot
+  labs(x = "Carrier", y = "Arrival Delay (minutes)")
+
+
+```
+
+
+
+
+
 ## (5b) The honest plot
+```{r}
+ggplot(flights, aes(x = carrier,
+                    y = arr_delay)) +
+  geom_boxplot() +
+  labs(x = "Carrier", y = "Arrival Delay (minutes)")
+```
+
+
+
 
 ## (5c) What changed, and which change did the work
+I changed two aspects to the overstated plot. First, I selected carriers whose spread in arrival delays would show a large difference. Second, I limited the axes to the range 0 to 30, this removed negative (timely) arrival times and adjusted the plot at 0 and placed the emphasis on the IQR. Adjusting the axes range did the best at emphasizing the difference in spread.
 
 # Part 6 · Who is missing (15 points)
 
