@@ -11,7 +11,7 @@
 
 <meta name="author" content="Sam Nicholes" />
 
-<meta name="date" content="2026-09-11" />
+<meta name="date" content="2026-09-12" />
 
 <title>Homework 1</title>
 
@@ -1570,7 +1570,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Homework 1</h1>
 <h3 class="subtitle">DATS 6101 · Fall 2026</h3>
 <h4 class="author">Sam Nicholes</h4>
-<h4 class="date">2026-09-11</h4>
+<h4 class="date">2026-09-12</h4>
 
 </div>
 
@@ -1646,9 +1646,9 @@ time if not early.</p>
 <pre class="r"><code># proportion of flights that arrive earlier than the mean arrival delay
 cat(&quot;mean:&quot;, mean, &quot;\n&quot;)</code></pre>
 <pre><code>## mean: 6.895377</code></pre>
-<pre class="r"><code>cat(&quot;flight delays &lt; mean:&quot;,
+<pre class="r"><code>cat(&quot;prop. flight delays &lt; mean:&quot;,
   mean(mean(flights$arr_delay, na.rm = TRUE) &gt; flights$arr_delay, na.rm = TRUE))</code></pre>
-<pre><code>## flight delays &lt; mean: 0.6767121</code></pre>
+<pre><code>## prop. flight delays &lt; mean: 0.6767121</code></pre>
 </div>
 <div id="d-iqr-against-the-standard-deviation" class="section level2">
 <h2>(2d) IQR against the standard deviation</h2>
@@ -1680,18 +1680,37 @@ flight was cancelled.</li>
 <li>Mechanism 2: if the flight has a missing arrival, the flight was
 rerouted.</li>
 </ul>
-<pre class="r"><code># total missing values for arrivals and departures
-c(miss_arr = sum(is.na(flights$arr_delay)),
+<pre class="r"><code>sum(is.na(flights$sched_arr_time))</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre class="r"><code>sum(is.na(flights$arr_time))</code></pre>
+<pre><code>## [1] 8713</code></pre>
+<pre class="r"><code>sum(is.na(flights$sched_dep_time))</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre class="r"><code>sum(is.na(flights$dep_time))</code></pre>
+<pre><code>## [1] 8255</code></pre>
+<pre class="r"><code>table(&quot;miss_arr_time&quot; = is.na(flights$arr_time),
+      &quot;miss_arr_delay&quot; = is.na(flights$arr_delay))</code></pre>
+<pre><code>##              miss_arr_delay
+## miss_arr_time  FALSE   TRUE
+##         FALSE 327346    717
+##         TRUE       0   8713</code></pre>
+<pre class="r"><code>table(&quot;miss_dep_time&quot; = is.na(flights$dep_time),
+      &quot;miss_dep_delay&quot; = is.na(flights$dep_delay))</code></pre>
+<pre><code>##              miss_dep_delay
+## miss_dep_time  FALSE   TRUE
+##         FALSE 328521      0
+##         TRUE       0   8255</code></pre>
+<pre class="r"><code>c(miss_arr = sum(is.na(flights$arr_delay)),
   miss_dep = sum(is.na(flights$dep_delay)))</code></pre>
 <pre><code>## miss_arr miss_dep 
 ##     9430     8255</code></pre>
-<pre class="r"><code>table(&quot;miss_arr&quot; = is.na(flights$arr_delay),
-      &quot;miss_dep&quot; = is.na(flights$dep_delay))</code></pre>
-<pre><code>##         miss_dep
-## miss_arr  FALSE   TRUE
-##    FALSE 327346      0
-##    TRUE    1175   8255</code></pre>
-<pre class="r"><code># Missing none is a completed flight
+<pre class="r"><code>table(&quot;miss_arr_delay&quot; = is.na(flights$arr_delay),
+      &quot;miss_dep_delay&quot; = is.na(flights$dep_delay))</code></pre>
+<pre><code>##               miss_dep_delay
+## miss_arr_delay  FALSE   TRUE
+##          FALSE 327346      0
+##          TRUE    1175   8255</code></pre>
+<pre class="r"><code># Missing neither is a completed flight
 # Missing both is a cancelled flight
 # Missing arrival only is a reroute in the flight
 # Missing departure only isn&#39;t possible</code></pre>
@@ -1821,7 +1840,7 @@ representative of reality.</p>
 </div>
 <div id="d-a-rule-applied" class="section level2">
 <h2>(4d) A rule, applied</h2>
-<p>An quick and easy solution is to draw a random sample from each
+<p>A quick and easy solution is to draw a random sample from each
 flight. This data set is essentially a total population of flights in
 New York from 2013, so it’s not unreasonable to take a random sample
 from the population and make inferences for New York-based flights. Some
@@ -1942,28 +1961,99 @@ emphasizing the difference in spread.</p>
 </div>
 <div id="part-6-who-is-missing-15-points" class="section level1">
 <h1>Part 6 · Who is missing (15 points)</h1>
-<p><em>One paragraph, at most 150 words. Three mechanisms, each with a
-direction.</em></p>
+<p>First, the data set is only the flights based out of 3 airports in
+New York City area (JFK, LGA, EWR). The exact impact of this is
+restrictive, but not representative of flight delays across the US.
+Second, this data set is missing values of interest across the three
+airports and across carriers. Whether this biases an estimate upwards or
+downwards is difficult to determine. Flights with a missing arrival
+delay also largely miss an arrival time. Third, only a single year is
+represented. It’s difficult to determine how this year would impact an
+estimate relative to other years.</p>
 </div>
 <div id="ai-disclosure" class="section level1">
 <h1>AI disclosure</h1>
-<!--
-Keep ONE of the two blocks below and delete the other.
-"I did not use an AI assistant" is always acceptable and earns full marks.
--->
-<div id="prompt-log" class="section level2">
-<h2>Prompt log</h2>
-</div>
 <div id="critique" class="section level2">
 <h2>Critique</h2>
-<p><em>150-300 words. Either name something the assistant got wrong and
-what it would have cost, or show the prompts you used trying to break it
-when it held up. Both earn full marks.</em></p>
-<!-- OR, replacing both sections above:
-
-I did not use an AI assistant on this assignment.
-
--->
+<p>I used Claude to remind me of syntax for functions or to recommend
+functions/packages when I didn’t know how to get a result I was looking
+for. The best example of this was when I wanted to draw a random sample
+of flights while taking into account carriers with a limiting number of
+total flights relative to carriers with more total flights. My initial
+prompt was vague and I added additional context of wanting to get a
+random sample that accounted for the carrier with fewer flights.</p>
+<p>Overall I was please with the recommendations (functions and syntax).
+If I needed clarification or additional examples, I used the search
+feature for R, “?function”.</p>
+<div id="prompt" class="section level4">
+<h4>Prompt:</h4>
+<p>How do I randomly select a number of row in a data set to subset into
+a new dataset?</p>
+</div>
+<div id="response" class="section level4">
+<h4>Response:</h4>
+<p>Two common ways, depending on whether you’re in the dplyr world
+already:</p>
+<p>dplyr:</p>
+<p>r subset_df &lt;- df %&gt;% dplyr::slice_sample(n = 100)</p>
+<p>n is the number of rows; use prop = 0.1 instead if you want a
+proportion (e.g., 10%) rather than a fixed count.</p>
+<p>Base R:</p>
+<p>r subset_df &lt;- df[sample(nrow(df), 100), ]</p>
+<p>sample(nrow(df), 100) picks 100 random row indices without
+replacement, and df[rows, ] subsets by those indices — the trailing
+comma matters, it says “these rows, all columns.”</p>
+<p>Reproducibility note, since this is random, you’ll get a different
+subset every time you run it unless you fix the random number
+generator’s starting point</p>
+<p>r set.seed(123) # any integer; run this line right before the
+sampling line subset_df &lt;- df %&gt;% dplyr::slice_sample(n = 100)</p>
+<p>Worth setting if you need the same “random” sample again later (for
+grading, debugging, or reproducing a result) — otherwise your classmate
+or your future self re-running the script gets a different 100 rows and
+different downstream numbers.</p>
+<p>One thing to decide up front: sampling without replacement (the
+default, and what you almost always want for subsetting a dataset)
+versus with replacement (replace = TRUE, used for bootstrapping) —
+pulling the same row twice into one subset is rarely what “randomly
+select rows” means unless you’re deliberately doing a bootstrap.</p>
+</div>
+<div id="follow-up-prompt" class="section level4">
+<h4>Follow-up Prompt</h4>
+<p>in the flights dataset, I want to select an equal number of carriers
+at random to subset into a new data set</p>
+</div>
+<div id="response-1" class="section level4">
+<h4>Response</h4>
+<p>This is likely “equal number of flights per carrier” (a
+balanced/stratified sample) rather than “a random subset of which
+carriers to include” — worth flagging since the phrasing could mean
+either, but given the carrier-comparison work you’ve been doing, a
+balanced sample per group is the natural next step (so that a carrier
+with 50,000 flights and one with 500 aren’t skewing comparisons purely
+through sample size). If you meant something else, the second block
+below covers that.</p>
+<p>Equal number of rows per carrier:</p>
+<p>r set.seed(123)</p>
+<p>flights %&gt;% dplyr::group_by(carrier) %&gt;% dplyr::slice_sample(n
+= 100) %&gt;% dplyr::ungroup()</p>
+<p>slice_sample() inside a group_by() runs the random sample separately
+within each group, so you get exactly 100 flights per carrier rather
+than 100 flights total pulled from the pooled data. ungroup() at the end
+matters — otherwise the grouping structure sticks around and silently
+affects anything you do downstream (a summarize() right after would run
+per-carrier again instead of on the full subset).</p>
+<p>One catch: if any carrier has fewer than 100 flights, this errors,
+because there’s nothing to sample without replacement past what exists.
+Rather than guessing a safe number, pull the true minimum group size and
+use that:</p>
+<p>r min_n &lt;- flights %&gt;% dplyr::count(carrier) %&gt;%
+dplyr::pull(n) %&gt;% min()</p>
+<p>flights %&gt;% dplyr::group_by(carrier) %&gt;% dplyr::slice_sample(n
+= min_n) %&gt;% dplyr::ungroup()</p>
+<p>That guarantees every carrier contributes exactly min_n rows — the
+largest balanced sample you can draw without any group running out.</p>
+</div>
 </div>
 </div>
 

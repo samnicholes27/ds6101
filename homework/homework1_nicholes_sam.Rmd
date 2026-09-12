@@ -83,7 +83,7 @@ Roughly, 67.7% of flights arrive earlier than the average flight delay time, whi
 ```{r}
 # proportion of flights that arrive earlier than the mean arrival delay
 cat("mean:", mean, "\n")
-cat("flight delays < mean:",
+cat("prop. flight delays < mean:",
   mean(mean(flights$arr_delay, na.rm = TRUE) > flights$arr_delay, na.rm = TRUE))
 
 ```
@@ -117,13 +117,26 @@ There are a total of 9430 missing arrival times, and 8255 missing departure time
 - Mechanism 2: if the flight has a missing arrival, the flight was rerouted.
 
 ```{r}
-# total missing values for arrivals and departures
+
+
+sum(is.na(flights$sched_arr_time))
+sum(is.na(flights$arr_time))
+sum(is.na(flights$sched_dep_time))
+sum(is.na(flights$dep_time))
+
+
+table("miss_arr_time" = is.na(flights$arr_time),
+      "miss_arr_delay" = is.na(flights$arr_delay))
+
+table("miss_dep_time" = is.na(flights$dep_time),
+      "miss_dep_delay" = is.na(flights$dep_delay))
+
 c(miss_arr = sum(is.na(flights$arr_delay)),
   miss_dep = sum(is.na(flights$dep_delay)))
 
-table("miss_arr" = is.na(flights$arr_delay),
-      "miss_dep" = is.na(flights$dep_delay))
-# Missing none is a completed flight
+table("miss_arr_delay" = is.na(flights$arr_delay),
+      "miss_dep_delay" = is.na(flights$dep_delay))
+# Missing neither is a completed flight
 # Missing both is a cancelled flight
 # Missing arrival only is a reroute in the flight
 # Missing departure only isn't possible
@@ -198,7 +211,7 @@ I would say that panels C and D from "What correlation cannot see" illustrate wh
 
 
 ## (4d) A rule, applied
-An quick and easy solution is to draw a random sample from each flight. This data set is essentially a total population of flights in New York from 2013, so it's not unreasonable to take a random sample from the population and make inferences for New York-based flights.
+A quick and easy solution is to draw a random sample from each flight. This data set is essentially a total population of flights in New York from 2013, so it's not unreasonable to take a random sample from the population and make inferences for New York-based flights.
 Some drawbacks to this method is that it's limited by the carrier with the fewest number of total flights during 2013 which is OO with 32 total flights. While this allows us to make inferences and reduce the missing values, the limitation to how big the random sample can be vs should be may not be "fair" to other carriers.
 
 ```{r}
@@ -280,25 +293,83 @@ I changed two aspects to the overstated plot. First, I selected carriers whose s
 
 # Part 6 · Who is missing (15 points)
 
-*One paragraph, at most 150 words. Three mechanisms, each with a direction.*
+First, the data set is only the flights based out of 3 airports in New York City area (JFK, LGA, EWR). The exact impact of this is restrictive, but not representative of flight delays across the US. Second, this data set is missing values of interest across the three airports and across carriers. Whether this biases an estimate upwards or downwards is difficult to determine. Flights with a missing arrival delay also largely miss an arrival time. Third, only a single year is represented. It's difficult to determine how this year would impact an estimate relative to other years.
 
 # AI disclosure
 
-<!--
-Keep ONE of the two blocks below and delete the other.
-"I did not use an AI assistant" is always acceptable and earns full marks.
--->
-
-## Prompt log
-
 ## Critique
+I used Claude to remind me of syntax for functions or to recommend functions/packages when I didn't know how to get a result I was looking for.
+The best example of this was when I wanted to draw a random sample of flights while taking into account carriers with a limiting number of total flights relative to carriers with more total flights. My initial prompt was vague and I added additional context of wanting to get a random sample that accounted for the carrier with fewer flights.
 
-*150-300 words. Either name something the assistant got wrong and what it would
-have cost, or show the prompts you used trying to break it when it held up.
-Both earn full marks.*
+Overall I was please with the recommendations (functions and syntax). If I needed clarification or additional examples, I used the search feature for R, "?function".
 
-<!-- OR, replacing both sections above:
+#### Prompt:
+How do I randomly select a number of row in a data set to subset into a new dataset?
 
-I did not use an AI assistant on this assignment.
 
--->
+#### Response:
+Two common ways, depending on whether you're in the dplyr world already:
+
+dplyr:
+
+r
+subset_df <- df %>% dplyr::slice_sample(n = 100)
+
+n is the number of rows; use prop = 0.1 instead if you want a proportion (e.g., 10%) rather than a fixed count.
+
+Base R:
+
+r
+subset_df <- df[sample(nrow(df), 100), ]
+
+
+sample(nrow(df), 100) picks 100 random row indices without replacement, and df[rows, ] subsets by those indices — the trailing comma matters, it says "these rows, all columns."
+
+Reproducibility note, since this is random, you'll get a different subset every time you run it unless you fix the random number generator's starting point
+
+
+r
+set.seed(123)  # any integer; run this line right before the sampling line
+subset_df <- df %>% dplyr::slice_sample(n = 100)
+
+
+Worth setting if you need the same "random" sample again later (for grading, debugging, or reproducing a result) — otherwise your classmate or your future self re-running the script gets a different 100 rows and different downstream numbers.
+
+One thing to decide up front: sampling without replacement (the default, and what you almost always want for subsetting a dataset) versus with replacement (replace = TRUE, used for bootstrapping) — pulling the same row twice into one subset is rarely what "randomly select rows" means unless you're deliberately doing a bootstrap.
+
+#### Follow-up Prompt:
+in the flights dataset, I want to select an equal number of carriers at random to subset into a new data set
+
+
+#### Response:
+This is likely "equal number of flights per carrier" (a balanced/stratified sample) rather than "a random subset of which carriers to include" — worth flagging since the phrasing could mean either, but given the carrier-comparison work you've been doing, a balanced sample per group is the natural next step (so that a carrier with 50,000 flights and one with 500 aren't skewing comparisons purely through sample size). If you meant something else, the second block below covers that.
+
+
+Equal number of rows per carrier:
+
+r
+set.seed(123)
+
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::slice_sample(n = 100) %>%
+  dplyr::ungroup()
+
+slice_sample() inside a group_by() runs the random sample separately within each group, so you get exactly 100 flights per carrier rather than 100 flights total pulled from the pooled data. ungroup() at the end matters — otherwise the grouping structure sticks around and silently affects anything you do downstream (a summarize() right after would run per-carrier again instead of on the full subset).
+
+One catch: if any carrier has fewer than 100 flights, this errors, because there's nothing to sample without replacement past what exists. Rather than guessing a safe number, pull the true minimum group size and use that:
+
+r
+min_n <- flights %>%
+  dplyr::count(carrier) %>%
+  dplyr::pull(n) %>%
+  min()
+
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::slice_sample(n = min_n) %>%
+  dplyr::ungroup()
+
+
+That guarantees every carrier contributes exactly min_n rows — the largest balanced sample you can draw without any group running out.
+
