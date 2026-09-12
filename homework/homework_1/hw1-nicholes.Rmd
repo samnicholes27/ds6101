@@ -1,0 +1,375 @@
+---
+title: "Homework 1"
+subtitle: "DATS 6101 · Fall 2026"
+author: "Sam Nicholes"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r data}
+# install.packages("nycflights13")   # run once, then leave this commented out
+library(nycflights13)
+library(tidyverse)
+data(flights)
+```
+
+<!--
+This skeleton exists so you spend your time on the analysis rather than on
+YAML. It is deliberately thin: the headings are here, the answers are not, and
+deciding what code belongs under each heading is part of what is being graded.
+
+Before you submit: Session > Restart R, then Knit. If it does not knit from a
+clean session, it will not knit on my machine either.
+
+Every number you state in prose must come from inline R code -- like this:
+`r nrow(flights)` rows -- and not be typed by hand.
+-->
+
+# Part 1 · The question (8 points)
+
+*A S.M.A.R.T. question this file can answer, and one it cannot. No code.*
+
+**A question this file can answer.**: Is distance to the destination airport a significant predictor of an arrival delay?
+
+**A question it cannot, and what specifically blocks it.**: Is total aircraft weight (aircraft + passengers + luggage) a significant predictor of air time?
+
+# Part 2 · One variable, honestly (13 points)
+
+## (2a) Five numbers and the IQR
+```{r}
+summary(flights$arr_delay)
+cat("IQR:", IQR(flights$arr_delay, na.rm = TRUE), "\n")
+cat("SD:", sd(flights$arr_delay, na.rm = TRUE), "\n")
+```
+
+
+
+## (2b) Mean against median, checked with a histogram
+The mean (~6.9), is larger than the median (-5). This is indicative of a right-skewed distribution.
+```{r}
+
+mean <- mean(flights$arr_delay, na.rm = TRUE)
+median <- median(flights$arr_delay, na.rm = TRUE)
+cat("mean:", mean, "\n")
+cat("median:", median, "\n")
+cat("mean > median:", mean > median)
+
+hist(flights$arr_delay,
+     main = "Histogram of Arrival Delay",
+     xlab = "Delay (minutes)")
+
+abline(v = mean(flights$arr_delay, na.rm = TRUE), col = "red", lwd = 2, lty = 2)
+abline(v = median(flights$arr_delay, na.rm = TRUE), col = "blue", lwd = 2, lty = 1)
+
+legend("right",
+       legend = c("Mean", "Median"),
+       col = c("red", "blue"),
+       lwd = 2,
+       lty = c(2, 1))
+
+```
+
+
+## (2c) The proportion arriving before the mean
+Roughly, 67.7% of flights arrive earlier than the average flight delay time, which tells us that most of the flights arrive nearly on time if not early.
+```{r}
+# proportion of flights that arrive earlier than the mean arrival delay
+cat("mean:", mean, "\n")
+cat("prop. flight delays < mean:",
+  mean(mean(flights$arr_delay, na.rm = TRUE) > flights$arr_delay, na.rm = TRUE))
+
+```
+
+
+## (2d) IQR against the standard deviation
+The IQR/SD ratio is 0.69, this indicates a distribution with heavy tails.
+```{r}
+cat("IQR/SD:",
+IQR(flights$arr_delay, na.rm = TRUE) / sd(flights$arr_delay, na.rm = TRUE))
+
+```
+
+
+
+# Part 3 · The flights that are not there (23 points)
+
+## (3a) How many, and what percentage
+There are 9430 rows that are missing values from arr_delay - 2.8% of all observations.
+
+```{r}
+sum(is.na(flights$arr_delay))
+mean(is.na(flights$arr_delay))
+```
+
+
+## (3b) The two mechanisms
+There are a total of 9430 missing arrival times, and 8255 missing departure times.
+
+- Mechanism 1: if the flight has a missing arrival and departure, the flight was cancelled.
+- Mechanism 2: if the flight has a missing arrival, the flight was rerouted.
+
+```{r}
+
+
+sum(is.na(flights$sched_arr_time))
+sum(is.na(flights$arr_time))
+sum(is.na(flights$sched_dep_time))
+sum(is.na(flights$dep_time))
+
+
+table("miss_arr_time" = is.na(flights$arr_time),
+      "miss_arr_delay" = is.na(flights$arr_delay))
+
+table("miss_dep_time" = is.na(flights$dep_time),
+      "miss_dep_delay" = is.na(flights$dep_delay))
+
+c(miss_arr = sum(is.na(flights$arr_delay)),
+  miss_dep = sum(is.na(flights$dep_delay)))
+
+table("miss_arr_delay" = is.na(flights$arr_delay),
+      "miss_dep_delay" = is.na(flights$dep_delay))
+# Missing neither is a completed flight
+# Missing both is a cancelled flight
+# Missing arrival only is a reroute in the flight
+# Missing departure only isn't possible
+
+```
+
+
+## (3c) What `na.rm = TRUE` actually describes
+The average arrival delay of planes that arrived at the planned destination is ~6.89 minutes.
+```{r}
+mean(flights$arr_delay, na.rm = TRUE)
+```
+
+
+## (3d) Is the deletion carrier-neutral?
+
+- Q) Does na.rm = TRUE treat all carriers equally?
+- A) No, na.rm = TRUE does not treat all carriers equally. The function, na.rm = TRUE, removes missing values before the mean is calculated, only those with a recorded arrival time will contribute to the mean. For example, UA is missing 9.5% of arrival times compared to UA who is only missing 3.6% of arrival times. This discrepancy in missing-ness will contribute to the the mean arrival delays for each.
+```{r}
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::summarise(
+    n = n(),
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    per_na_arr_time = mean(is.na(arr_time) * 100)
+  ) %>%
+  dplyr::arrange(desc(per_na_arr_time))
+```
+
+
+## (3e) What you would do about it
+I would keep the rows with missing values, but use a binary/boolean outcome for a timely arrival (1, 0; yes, no) and use that to create a score. A customer is ultimately more interested in the question "If I fly with this carrier, will I arrive on time?" when choosing a carrier, rather than "By how much will I be late?". Customers only worry about "By how much?" after they have bought a ticket and are delayed en route, essentially.
+
+
+
+
+# Part 4 · A ranking that is not what it looks like (18 points)
+
+## (4a) Carriers by mean arrival delay
+```{r}
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::summarise(
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE)
+  ) %>%
+  dplyr::arrange(desc(mean_arr_delay))
+```
+
+## (4b) What should stop you in the top five
+Among the top five, OO only had 32 flights with just over 9% of those flights with a missing arrival time. This is not a large sample relative to the other carriers.
+
+```{r}
+
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::filter(carrier %in% c("F9", "FL", "EV", "YV", "OO")) %>%
+  dplyr::summarise(
+    n = n(),
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    per_na_arr_time = mean(is.na(arr_time) * 100)
+  ) %>%
+  dplyr::arrange(desc(mean_arr_delay))
+
+
+
+
+```
+
+
+## (4c) Which panel this is
+I would say that panels C and D from "What correlation cannot see" illustrate what is happening with missing-ness in the flight data. Rather than showing a complete picture, select data points (when unaccounted for in an analysis) skew the statistics. Missing data allow existing data to push the statistics in a direction that is not representative of reality.
+
+
+## (4d) A rule, applied
+A quick and easy solution is to draw a random sample from each flight. This data set is essentially a total population of flights in New York from 2013, so it's not unreasonable to take a random sample from the population and make inferences for New York-based flights.
+Some drawbacks to this method is that it's limited by the carrier with the fewest number of total flights during 2013 which is OO with 32 total flights. While this allows us to make inferences and reduce the missing values, the limitation to how big the random sample can be vs should be may not be "fair" to other carriers.
+
+```{r}
+set.seed(2727)
+
+table(flights$carrier)
+
+# pull the maximum number of flights determined by the carrier with the fewest flights in 2013
+min_n <- flights %>%
+  dplyr::count(carrier) %>%
+  dplyr::pull(n) %>%
+  min()
+
+# select a random sample of flights
+rand_flights <- flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::slice_sample(n = min_n) %>%
+  dplyr::ungroup()
+
+# Mean arrival flight delay for random sample
+rand_flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::summarise(
+    n = n(),
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    per_na_arr_time = mean(is.na(arr_time) * 100)
+  ) %>%
+  dplyr::arrange(desc(per_na_arr_time))
+
+# Mean arrival flight delay for total data set
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::summarise(
+    n = n(),
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    per_na_arr_time = mean(is.na(arr_time) * 100)
+  ) %>%
+  dplyr::arrange(desc(per_na_arr_time))
+
+```
+
+
+
+
+# Part 5 · A plot that misleads, and its honest twin (13 points)
+
+## (5a) The misleading plot
+
+```{r}
+# Select flights based on large difference in spread
+flights %>%
+  dplyr::filter(carrier %in% c("AS", "OO", "YV", "HA", "AA", "DL", "MQ")) %>%
+  ggplot(aes(x = carrier,
+             y = arr_delay)) +
+  geom_boxplot() +
+  coord_cartesian(ylim = c(0, 30)) + # Limit axes that are shown on plot
+  labs(x = "Carrier", y = "Arrival Delay (minutes)")
+
+
+```
+
+
+
+
+
+## (5b) The honest plot
+```{r}
+ggplot(flights, aes(x = carrier,
+                    y = arr_delay)) +
+  geom_boxplot() +
+  labs(x = "Carrier", y = "Arrival Delay (minutes)")
+```
+
+
+
+
+## (5c) What changed, and which change did the work
+I changed two aspects to the overstated plot. First, I selected carriers whose spread in arrival delays would show a large difference. Second, I limited the axes to the range 0 to 30, this removed negative (timely) arrival times and adjusted the plot at 0 and placed the emphasis on the IQR. Adjusting the axes range did the best at emphasizing the difference in spread.
+
+# Part 6 · Who is missing (15 points)
+
+First, the data set is only the flights based out of 3 airports in New York City area (JFK, LGA, EWR). The exact impact of this is restrictive, but not representative of flight delays across the US. Second, this data set is missing values of interest across the three airports and across carriers. Whether this biases an estimate upwards or downwards is difficult to determine. Flights with a missing arrival delay also largely miss an arrival time. Third, only a single year is represented. It's difficult to determine how this year would impact an estimate relative to other years.
+
+# AI disclosure
+
+## Critique
+I used Claude to remind me of syntax for functions or to recommend functions/packages when I didn't know how to get a result I was looking for.
+The best example of this was when I wanted to draw a random sample of flights while taking into account carriers with a limiting number of total flights relative to carriers with more total flights. My initial prompt was vague and I added additional context of wanting to get a random sample that accounted for the carrier with fewer flights.
+
+Overall I was please with the recommendations (functions and syntax). If I needed clarification or additional examples, I used the search feature for R, "?function".
+
+#### Prompt:
+How do I randomly select a number of row in a data set to subset into a new dataset?
+
+
+#### Response:
+Two common ways, depending on whether you're in the dplyr world already:
+
+dplyr:
+
+r
+subset_df <- df %>% dplyr::slice_sample(n = 100)
+
+n is the number of rows; use prop = 0.1 instead if you want a proportion (e.g., 10%) rather than a fixed count.
+
+Base R:
+
+r
+subset_df <- df[sample(nrow(df), 100), ]
+
+
+sample(nrow(df), 100) picks 100 random row indices without replacement, and df[rows, ] subsets by those indices — the trailing comma matters, it says "these rows, all columns."
+
+Reproducibility note, since this is random, you'll get a different subset every time you run it unless you fix the random number generator's starting point
+
+
+r
+set.seed(123)  # any integer; run this line right before the sampling line
+subset_df <- df %>% dplyr::slice_sample(n = 100)
+
+
+Worth setting if you need the same "random" sample again later (for grading, debugging, or reproducing a result) — otherwise your classmate or your future self re-running the script gets a different 100 rows and different downstream numbers.
+
+One thing to decide up front: sampling without replacement (the default, and what you almost always want for subsetting a dataset) versus with replacement (replace = TRUE, used for bootstrapping) — pulling the same row twice into one subset is rarely what "randomly select rows" means unless you're deliberately doing a bootstrap.
+
+#### Follow-up Prompt:
+in the flights dataset, I want to select an equal number of carriers at random to subset into a new data set
+
+
+#### Response:
+This is likely "equal number of flights per carrier" (a balanced/stratified sample) rather than "a random subset of which carriers to include" — worth flagging since the phrasing could mean either, but given the carrier-comparison work you've been doing, a balanced sample per group is the natural next step (so that a carrier with 50,000 flights and one with 500 aren't skewing comparisons purely through sample size). If you meant something else, the second block below covers that.
+
+
+Equal number of rows per carrier:
+
+r
+set.seed(123)
+
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::slice_sample(n = 100) %>%
+  dplyr::ungroup()
+
+slice_sample() inside a group_by() runs the random sample separately within each group, so you get exactly 100 flights per carrier rather than 100 flights total pulled from the pooled data. ungroup() at the end matters — otherwise the grouping structure sticks around and silently affects anything you do downstream (a summarize() right after would run per-carrier again instead of on the full subset).
+
+One catch: if any carrier has fewer than 100 flights, this errors, because there's nothing to sample without replacement past what exists. Rather than guessing a safe number, pull the true minimum group size and use that:
+
+r
+min_n <- flights %>%
+  dplyr::count(carrier) %>%
+  dplyr::pull(n) %>%
+  min()
+
+flights %>%
+  dplyr::group_by(carrier) %>%
+  dplyr::slice_sample(n = min_n) %>%
+  dplyr::ungroup()
+
+
+That guarantees every carrier contributes exactly min_n rows — the largest balanced sample you can draw without any group running out.
+
