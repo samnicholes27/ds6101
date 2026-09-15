@@ -1,0 +1,103 @@
+---
+title: "Homework 2"
+subtitle: "DATS 6101 · Fall 2026"
+author: "YOUR NAME"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r data}
+library(nycflights13)
+data(flights)
+```
+
+<!--
+The definitions are on the assignment page, and your numbers are checked against
+them, so use them exactly:
+
+  d        rows where both dep_delay and arr_delay are present (327,346 rows)
+  A        arr_delay > 15
+  D        dep_delay > 15
+  a day    the calendar date from year, month, day
+  morning  dep_time %/% 100 below 12;  evening: 17 or later
+
+Part 4(a) uses all 336,776 rows instead of d. It says so.
+
+Before you submit: Session > Restart R, then Knit. Every number you state in
+prose must come from inline R code, like this: `r nrow(flights)` rows.
+-->
+
+# Part 1 · Events are logical vectors (10 points)
+
+## (a) P(A), P(D), P(A and D)
+
+## (b) P(A or D), two ways
+
+## (c) Neither
+
+# Part 2 · Independence, checked rather than assumed (18 points)
+
+## (a) The product, the ratio, and P(A | D)
+
+## (b) Late, by origin
+
+*Numbers first, then whether the difference matters.*
+
+## (c) Two flights, same day
+
+# Part 3 · A rule that works, and the same rule that does not (22 points)
+
+## (a) Arriving more than 15 minutes late
+
+## (b) Arriving more than three hours late
+
+## (c) The same precision, by Bayes' rule
+
+## (d) For the manager
+
+# Part 4 · Which distribution, and why not (22 points)
+
+## (a) Cancellations and scheduled departures
+
+## (b) Late flights per day, JFK to LAX
+
+## (c) The 68-95-99.7 rule, twice
+
+# Part 5 · < or ≤ (8 points)
+
+## (a) The daily late count
+
+## (b) air_time
+
+# Part 6 · The staffing sentence (10 points)
+
+*One paragraph, at most 150 words.*
+
+# AI disclosure
+
+<!--
+Keep ONE of the two blocks below and delete the other.
+"I did not use an AI assistant" is always acceptable and earns full marks.
+-->
+
+## Prompt log
+
+## Critique
+
+*150-300 words. Either name something the assistant got wrong and what it would
+have cost, or show the prompts you used trying to break it when it held up.
+Both earn full marks.*
+
+<!-- OR, replacing both sections above:
+
+I did not use an AI assistant on this assignment.
+
+-->
