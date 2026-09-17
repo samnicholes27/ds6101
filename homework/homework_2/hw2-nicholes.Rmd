@@ -64,9 +64,8 @@ pD <- mean(d$dep_delay > 15, na.rm = TRUE) # P(late departure)
 pAuD_opp <- mean(A | D, na.rm = TRUE)
 
 # By additive rule
-pAnD_opp <- mean(A & D, na.rm = TRUE)
-
-pAuD_add <- pA + pD - pAnD_opp
+pAnD_opp <- mean(A & D, na.rm = TRUE) # calculate p(AnD)
+pAuD_add <- pA + pD - pAnD_opp # calculate p(AuD) by addititve rule
 
 isTRUE(all.equal(pAuD_opp, pAuD_add)) # vectors are the same mathematically
 
@@ -96,12 +95,90 @@ cAuD
 # Part 2 · Independence, checked rather than assumed (18 points)
 
 ## (a) The product, the ratio, and P(A | D)
+When a flight is pushed back (late departure), the flight will most likley arrive late at the destination.
+
+```{r}
+
+# Check A and D independence
+pApD <- pA * pD 
+isTRUE(all.equal(pApD, pAuD_opp))
+pAuD_opp
+pApD
+
+pAuD_opp / pApD # p(AuD) is ~5.5 times larger than p(A)p(D)
+
+# Compute p(A|D)
+# p(A|D) = p(AnD) / p(D)
+
+pAgD <- pAnD_opp / pD
+pAgD
+```
+
 
 ## (b) Late, by origin
 
 *Numbers first, then whether the difference matters.*
 
+p(A) = 0.237
+p(A | EWR) = 0.256
+p(A | JFK) = 0.23
+p(A | LGA) = 0.224
+
+p(A | EWR) / p(A) = 1.079
+p(A | JFK) / p(A) = 0.968
+p(A | LGA) / p(A) = 0.943
+
+The comparison of a late arrival given a specific airport or origin to overall late arrival for the NYC region is not meaningfully different.
+Travelers would not gain an advantage in timeliness from one airport to another.
+
+```{r}
+
+# Compute p(Origin)
+origin_ewr <- d$origin == "EWR"
+head(origin_ewr, 50)
+pEWR <- mean(origin_ewr)
+pEWR
+
+origin_jfk <- d$origin == "JFK"
+head(origin_jfk, 50)
+pJFK <- mean(origin_jfk)
+pJFK
+
+origin_lga <- d$origin == "LGA"
+head(origin_lga, 50)
+pLGA <- mean(origin_lga)
+pLGA
+
+# Vectors should not be the same
+isTRUE(all.equal(origin_ewr, origin_jfk))
+isTRUE(all.equal(origin_ewr, origin_lga))
+isTRUE(all.equal(origin_jfk, origin_lga))
+
+# Compute p(A | Origin)
+# Subset proportion of late arrivals by origin
+pAgEWR <- mean(A[origin_ewr])
+pAgJFK <- mean(A[origin_jfk])
+pAgLGA <- mean(A[origin_lga])
+
+
+pA # 0.237
+pAgEWR # 0.256
+pAgJFK # 0.23
+pAgLGA # 0.224
+
+pAgEWR / pA # 1.079
+pAgJFK / pA # 0.968
+pAgLGA / pA # 0.943
+# Late arrivals to not meaningfully differ by airport relative to overall late arrivals
+
+```
+
 ## (c) Two flights, same day
+
+```{r}
+
+```
+
 
 # Part 3 · A rule that works, and the same rule that does not (22 points)
 
