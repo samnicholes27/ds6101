@@ -177,6 +177,21 @@ pAgLGA / pA # 0.943
 
 ```{r}
 
+summary(d$day)
+min(d$sched_arr_time)
+max(d$sched_arr_time)
+
+# splisched_arr_time# split flights by day
+d_day <- split(flights, flights$day)
+
+# proportion of morning flights that arrive late
+
+
+# proportion of evening flights that arrive late
+
+
+
+
 ```
 
 
