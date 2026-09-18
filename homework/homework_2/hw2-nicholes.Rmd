@@ -285,11 +285,36 @@ pLgF
 ## (3b) Arriving more than three hours late
 ```{r}
 
+# New flag rule > 180
+F180 <- d$dep_delay > 180
+
+pF180 <- mean(F180)
+
+# Sensitivity: True positive, probability that the flight was flagged given that it was actually late
+#   p(F | L)
+
+pF180gL <- mean(F180[act_late])
+pF180gL
+
+# Specificity: True negative, probability that the flight wasn't flagged given that it was on time
+#   p(Fc | Lc)
+pF180cgLc <- mean(!F180[!act_late])
+pF180cgLc
+
+# Precision: Probability that the flight was actually late, given that it was flagged
+#   p(L | F)
+pLgF180 <- mean(act_late[F180])
+pLgF180
+
 ```
 
 
 
 ## (3c) The same precision, by Bayes' rule
+```{r}
+
+```
+
 
 ## (3d) For the manager
 
