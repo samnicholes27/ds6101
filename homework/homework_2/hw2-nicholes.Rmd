@@ -37,6 +37,8 @@ prose must come from inline R code, like this: `r nrow(flights)` rows.
 
 # Part 1 · Events are logical vectors (10 points)
 
+https://www.smajhi.com/DATS-6101/homework/hw2.html
+
 ## (a) P(A), P(D), P(A and D)
 
 ```{r}
