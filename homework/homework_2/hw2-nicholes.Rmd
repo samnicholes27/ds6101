@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ```{r data}
 library(nycflights13)
+library(tidyverse)
 data(flights)
 ```
 
@@ -39,7 +40,7 @@ prose must come from inline R code, like this: `r nrow(flights)` rows.
 
 https://www.smajhi.com/DATS-6101/homework/hw2.html
 
-## (a) P(A), P(D), P(A and D)
+## (1a) P(A), P(D), P(A and D)
 
 ```{r}
 d <- flights[complete.cases(flights), ] # data set of complete rows stored as d
@@ -54,7 +55,7 @@ head(D, 50) # check vector
 
 
 
-## (b) P(A or D), two ways
+## (1b) P(A or D), two ways
 
 ```{r}
 # P(AuD), probability that flight is late by arrival OR by departure
@@ -79,7 +80,7 @@ print(pAuD_add, digits = 20)
 
 
 
-## (c) Neither
+## (1c) Neither
 The complement of p(AuD) gets us to p(Ac n Dc).
 1 - p(AuD) = p(Ac n Dc)
 
@@ -96,7 +97,7 @@ cAuD
 
 # Part 2 · Independence, checked rather than assumed (18 points)
 
-## (a) The product, the ratio, and P(A | D)
+## (2a) The product, the ratio, and P(A | D)
 When a flight is pushed back (late departure), the flight will most likley arrive late at the destination.
 
 ```{r}
@@ -117,7 +118,7 @@ pAgD
 ```
 
 
-## (b) Late, by origin
+## (2b) Late, by origin
 
 *Numbers first, then whether the difference matters.*
 
@@ -175,23 +176,74 @@ pAgLGA / pA # 0.943
 
 ```
 
-## (c) Two flights, same day
+## (2c) Two flights, same day
+Correlation: 0.6321228
+Avg morning prop: 0.1459389
+Avg evening prop: 0.3366757
+Product of avgs: 0.04913409
 
 ```{r}
 
-summary(d$day)
-min(d$sched_arr_time)
-max(d$sched_arr_time)
+min(d$sched_dep_time)
+max(d$sched_dep_time)
 
-# splisched_arr_time# split flights by day
-d_day <- split(flights, flights$day)
+# 2c-a) Compute proportion of late morning, and late evening flights for each day
+# Create variables for morning/evening, late: T/F
+# Morning flight: 500 - 1159
+# Evening flight: 1700 - 2359
+d <- d %>%
+  mutate(
+    time_of_day = case_when(
+      sched_dep_time >= 500 & sched_dep_time <= 1159 ~ "morning",
+      sched_dep_time >= 1700 & sched_dep_time <= 2359 ~ "evening",
+      TRUE ~ "afternoon"),
+    late = arr_delay > 15)
 
-# proportion of morning flights that arrive late
+table(d$time_of_day)
+table(d$late)
+
+late_by_day <- d %>%
+  filter(time_of_day %in% c("morning", "evening")) %>%
+  group_by(day, time_of_day) %>%
+  summarise(prop_late = mean(late), n = n(), .groups = "drop")
+
+late_by_day
 
 
-# proportion of evening flights that arrive late
 
 
+# 2c-b) Correlation between morning and evening flights across days
+# transpose to wide to get morning/evening columns
+late_wide <- late_by_day %>%
+  select(day, time_of_day, prop_late) %>%
+  pivot_wider(names_from = time_of_day, values_from = prop_late)
+
+plot(late_wide$morning, late_wide$evening) # plot
+cor(late_wide$morning, late_wide$evening) # correlation coefficient
+
+
+# 2c-c) Report the average morning proportion, average evening proportion, and their product
+avg_even_late <- mean(late_by_day$prop_late[late_by_day$time_of_day == "evening"])
+median(late_by_day$prop_late[late_by_day$time_of_day == "evening"])
+sd(late_by_day$prop_late[late_by_day$time_of_day == "evening"])
+IQR(late_by_day$prop_late[late_by_day$time_of_day == "evening"])
+
+avg_morn_late <- mean(late_by_day$prop_late[late_by_day$time_of_day == "morning"])
+median(late_by_day$prop_late[late_by_day$time_of_day == "morning"])
+sd(late_by_day$prop_late[late_by_day$time_of_day == "morning"])
+IQR(late_by_day$prop_late[late_by_day$time_of_day == "morning"])
+
+
+avg_morn_late * avg_even_late
+# 2c-d) Estimate p(Morning Flight late & Evening Flight late on same day) as average over days
+average_of_prod <- mean(late_wide$morning * late_wide$evening) # p(late morning & evening | any given day)
+prod_of_averages <- avg_morn_late * avg_even_late # p(late morning AND late evening) assuming independence
+average_of_prod
+prod_of_averages
+
+average_of_prod - prod_of_averages
+# small difference in probabilities = not mathematically independent 
+# demonstrates independence of morning vs evening lateness in principle
 
 
 ```
@@ -199,27 +251,61 @@ d_day <- split(flights, flights$day)
 
 # Part 3 · A rule that works, and the same rule that does not (22 points)
 
-## (a) Arriving more than 15 minutes late
+## (3a) Arriving more than 15 minutes late
+```{r}
 
-## (b) Arriving more than three hours late
+flag <- d$dep_delay > 30
+act_late <- d$arr_delay > 15
 
-## (c) The same precision, by Bayes' rule
+pF <- mean(flag)
+pL <- pA
 
-## (d) For the manager
+table(Flagged = flag, 
+      Late = act_late)
+
+# Sensitivity: True positive, probability that the flight was flagged given that it was actually late
+#   p(F | L)
+pFgL <- mean(flag[act_late])
+pFgL
+
+# Specificity: True negative, probability that the flight wasn't flagged given that it was on time
+#   p(Fc | Lc)
+pFcgLc <- mean(!flag[!act_late])
+pFcgLc
+
+# Precision: Probability that the flight was actually late, given that it was flagged
+#   p(L | F)
+pLgF <- mean(act_late[flag])
+pLgF
+
+
+```
+
+
+## (3b) Arriving more than three hours late
+```{r}
+
+```
+
+
+
+## (3c) The same precision, by Bayes' rule
+
+## (3d) For the manager
 
 # Part 4 · Which distribution, and why not (22 points)
 
-## (a) Cancellations and scheduled departures
+## (4a) Cancellations and scheduled departures
 
-## (b) Late flights per day, JFK to LAX
+## (4b) Late flights per day, JFK to LAX
 
-## (c) The 68-95-99.7 rule, twice
+## (4c) The 68-95-99.7 rule, twice
 
 # Part 5 · < or ≤ (8 points)
 
-## (a) The daily late count
+## (5a) The daily late count
 
-## (b) air_time
+## (5b) air_time
 
 # Part 6 · The staffing sentence (10 points)
 
