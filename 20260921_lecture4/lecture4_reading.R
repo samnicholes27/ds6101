@@ -138,6 +138,87 @@ mean(large_mean) - median(large_mean)
 
 
 
+# Confidence Intervals --------------------------------------------------------
+
+
+true_mu <- mean(population)
+
+
+# Small sample
+set.seed(12)
+ci_small <- t(replicate(10000, {
+  s <- sample(population, size = 5, replace = TRUE)
+  xbar <- mean(s)
+  se   <- sd(s) / sqrt(5)
+  c(lower = xbar - 1.96 * se, upper = xbar + 1.96 * se)
+}))
+
+head(ci_small)
+
+
+covers_small <- ci_small[,"lower"] <= true_mu & true_mu <= ci_small[,"upper"]
+mean(covers_small) # Proportional width of confidence interval for a small sample size
+# 80% of sample have mu
+
+
+
+# Large sample
+set.seed(13)
+ci_large <- t(replicate(10000, {
+  s <- sample(population, size = 100, replace = TRUE)
+  xbar <- mean(s)
+  se   <- sd(s) / sqrt(100)
+  c(lower = xbar - 1.96 * se, upper = xbar + 1.96 * se)
+}))
+
+covers_large <- ci_large[,"lower"] <= true_mu & true_mu <= ci_large[,"upper"]
+mean(covers_large) # Proportional width of confidence interval for a small sample size
+# 93.8% of samples have mu
+
+
+
+# Confidence Intervals for a T-Distribution
+
+# Small sample
+set.seed(14)
+ci_small_t <- t(replicate(10000, {
+  s <- sample(population, size = 5, replace = TRUE)
+  xbar <- mean(s)
+  se   <- sd(s) / sqrt(5)
+  crit <- qt(0.975, df = 5 - 1)
+  c(lower = xbar - crit * se, upper = xbar + crit * se)
+}))
+
+covers_small_t <- ci_small_t[,"lower"] <= true_mu & true_mu <= ci_small_t[,"upper"]
+mean(covers_small_t)
+# 88% of samples contain mu
+
+
+# Large sample
+set.seed(15)
+ci_large_t <- t(replicate(10000, {
+  s <- sample(population, size = 100, replace = TRUE)
+  xbar <- mean(s)
+  se   <- sd(s) / sqrt(100)
+  crit <- qt(0.975, df = 100 - 1)
+  c(lower = xbar - crit * se, upper = xbar + crit * se)
+}))
+
+covers_large_t <- ci_large_t[,"lower"] <= true_mu & true_mu <= ci_large_t[,"upper"]
+mean(covers_large_t)
+# 94% of samples contain mu
+
+
+
+
+x <- seq(-4, 4, length.out = 400)
+plot(x, dnorm(x), type = "l", lwd = 2, ylab = "density", xlab = "",
+     main = "Normal vs t at varying df")
+lines(x, dt(x, df = 4), lwd = 2, col = "firebrick")
+lines(x, dt(x, df = 29), lwd = 2, col = "steelblue", lty = 2)
+legend("topright", bty = "n", lwd = 2,
+       col = c("black", "steelblue", "firebrick"), lty = c(1, 2, 1),
+       legend = c("Normal", "t, df = 29", "t, df = 4 (matches n=5)"))
 
 
 
