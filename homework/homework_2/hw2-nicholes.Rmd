@@ -285,26 +285,26 @@ pLgF
 ## (3b) Arriving more than three hours late
 ```{r}
 
-# New flag rule > 180
-F180 <- d$dep_delay > 180
 
-pF180 <- mean(F180)
+# New Late time
+act_late180 <- d$arr_delay > 180
+pact_late180 <- mean(act_late180)
 
 # Sensitivity: True positive, probability that the flight was flagged given that it was actually late
 #   p(F | L)
 
-pF180gL <- mean(F180[act_late])
-pF180gL
+pFgL180 <- mean(flag[act_late180])
+pFgL180
 
 # Specificity: True negative, probability that the flight wasn't flagged given that it was on time
 #   p(Fc | Lc)
-pF180cgLc <- mean(!F180[!act_late])
-pF180cgLc
+pFcgL180c <- mean(!flag[!act_late180])
+pFcgL180c
 
 # Precision: Probability that the flight was actually late, given that it was flagged
 #   p(L | F)
-pLgF180 <- mean(act_late[F180])
-pLgF180
+pL180gF <- mean(act_late180[flag])
+pL180gF
 
 ```
 
@@ -313,18 +313,118 @@ pLgF180
 ## (3c) The same precision, by Bayes' rule
 ```{r}
 
+# p(L180 | F) = [p(F | L180)p(L180)] / p(F)
+
+pL180gF_bayes <- (pFgL180 * pact_late180) / pF
+pL180gF_bayes
+
 ```
 
 
 ## (3d) For the manager
+The flag still captures flights that are late and is good at identifying flights that are at least 30 minutes late, but the number of flights that are 3 hours late or later are less common. There's not enough specificity to rely the flag rule in this context.
 
 # Part 4 · Which distribution, and why not (22 points)
 
 ## (4a) Cancellations and scheduled departures
 
+- Cancellations: Daily mean = 266.29; Daily variance = 29999.75. This indicates overdispersion where the rate of cancellations isn't constant or the probability of a cancellation is not independent.
+
+- Daily JFK flights at 5PM: Daily mean = 281.35; Daily variance = 485.64. This includes all 31 days and still shows over-dispersion. When reducing the sample to 28 days - daily mean = 286.68; daily variance = 10.23 (Poisson fails in the opposite direction - underdispersion). Considering that we're looking at a specific time across days, the process that produces a poisson distribution where mean = variance is broken because the rate of the process (flights per day at 5PM) is fixed rather than random or independent.
+
+- Difference in dispersion between 31 days and 28 days for flights at 5PM out of JFK: Not all months have 31 days, so mean and variance when calculated for 31 days is probably biased upward for months that have more data (more days). The difference between mean and variance isn't as large as it is for cancellations because we've taken a smaller sample (JFk at 5PM), rather than all aiports over a 24 hour period of time.
+
+```{r}
+
+# Count flights with missing dep_time for each day
+cancellations <- flights %>%
+  filter(is.na(dep_time)) %>%
+  group_by(day) %>%
+  summarise(n = n(), .groups = "drop")
+cancellations
+
+cancellations_summary <- cancellations %>%
+  summarise(daily_mean = mean(n), daily_var = var(n))
+cancellations_summary
+
+# Count flights from JFK with hour == 17 for each day
+sched_dept_jfk <- flights %>%
+  filter(origin == "JFK", hour == 17) %>%
+  group_by(day) %>%
+  summarize(n = n(), .groups = "drop")
+sched_dept_jfk
+
+# Over-dispersion with all 31 days
+sched_dept_jfk_summary <- sched_dept_jfk %>%
+  summarise(daily_mean = mean(n), daily_var = var(n))
+sched_dept_jfk_summary
+
+# Under-dispersion with fewer days
+sched_dept_jfk %>%
+  filter(day <= 28) %>%
+  summarise(daily_mean = mean(n), daily_var = var(n))
+
+```
+
+
 ## (4b) Late flights per day, JFK to LAX
+A binomial distribtuion assumes independence between flights (which is not waht is actually observed), and constant probability across flights (which also isn't observed since flights aren't independent, statistically). Thus, observed variance does not match what we would otherwise expect under those assumptions. Patterns in flight cancellations are correlated at some level - weather, scheduling, etc.
+
+```{r}
+# Binomial Distribution
+# n = No. of observations (trials)
+# p = probability of an event (e.g. late flight)
+# mean = np
+# variance = np(1-p)
+
+# Assumptions:
+# 1) Fixed number of trials, n
+# 2) Independence between trials
+# 3) Constant probability of event across all trials, p
+
+d_jfk_lax <- d %>% 
+  filter(origin == "JFK", dest == "LAX")
+
+# Pooled rate across all days
+p_hat_late_jfk_lax <- mean(d_jfk_lax$arr_delay > 15)   # probability of: event = late
+n_total_jfk_lax     <- length(d_jfk_lax$arr_delay)      # total no. of flights, all days
+p_hat_jfk_lax
+
+# Per day
+daily_jfk_lax <- d_jfk_lax %>% 
+  group_by(day) %>%
+  summarise(total = n(),
+            n_late = sum(arr_delay > 15),
+            .groups = "drop") %>%
+  mutate(theoretical_var = total * p_hat_late_jfk_lax * (1 - p_hat_late_jfk_lax))
+
+observed_var <- var(daily_jfk_lax$n_late)
+observed_var
+
+avg_theoretical_var <- mean(daily_jfk_lax$theoretical_var)
+avg_theoretical_var
+
+
+```
+
 
 ## (4c) The 68-95-99.7 rule, twice
+
+```{r}
+# 68-98-99.7 for d$arr_delay
+
+
+
+
+
+# 68-95-99.7 for d_jfk_lax$air_time
+
+
+
+
+```
+
+
 
 # Part 5 · < or ≤ (8 points)
 
