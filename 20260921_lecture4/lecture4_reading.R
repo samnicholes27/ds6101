@@ -1,226 +1,108 @@
 
 
 
-# The Normal Distribution ------------------------------------------------------
+# Expectation ------------------------------------------------------------------
 
-# Parameters:
-#   μ, mu - center (mean)
-#   σ, sigma - spread (standard deviation)
-# The mean and standard deviation are independent of each other,
-# you can have any center with any spread.
-#
-# The mean and standard deviation are finite. Meaning, the mean is a specific number.
-# Finite standard deviation describes how fast the tails of the distribution decay.
+# expectation is the average outcome of a process you would expect to have in the long-run
+# center of mass, the mean for a Random Variable
+# where a distribution sits
 
-# Central Limit Theorem
-# For sample of independent observations (n) drawn from a population, the means of
-# each sample will converge upon a distribution (Normal distribution), with a mean
-# and standard deviation. The key to this pattern is dependent on n grows larger.
+# E[X] = sum(P(X = x))
 
+# Theoretical Expectation
+die <- 1:6 # fair six-sided die
+prob <- 1/6 # probability of each side
 
-# Empirical Rule: 68-95-99.7
-# 68% of data falls within 1 SD of the mean
-# 95% of the data falls within 2 SDs of the mean
-# 99.7% of the data falls within 3 SDs of the mean
+prob * 6 # check that all probabilities don't exceed 1 (100%)
+theoretical_expectation <- sum(die * prob) # expectation = sum of [value of each side x probability of each side]
 
+# Simulated Empirical Expectation
+set.seed(6101)
+rolls <- sample(1:6, 10000, replace = TRUE) # 1000 random rolls
+running <- cumsum(rolls) / seq_along(rolls) # running average after each roll
 
-# Simulation, Normal Distribtion  ----------------------------------------------
+# snapshot of running average after x number of rolls:
+round(c(after_10 = running[10], after_100 = running[100],
+        after_1000 = running[1000], after_10000 = running[10000]), 4)
 
-set.seed(27)
+running[10]
+running[100]
+running[1000]
+running[10000]
 
-# Plot to demonstrate how mu affects position or the center of distribution
-par(mfrow = c(1, 1))
-x <- seq(-10, 20, length.out = 500)
-plot(x, dnorm(x, mean = 0, sd = 2), type = "l", lwd = 2, col = "black",
-     ylab = "density", main = "Same sigma, different mu")
-lines(x, dnorm(x, mean = 5, sd = 2), lwd = 2, col = "blue")
-lines(x, dnorm(x, mean = 10, sd = 2), lwd = 2, col = "red")
-legend("topright", legend = c("mu=0", "mu=5", "mu=10"),
-       col = c("black","blue","red"), lwd = 2)
+# average converges on the Expectation over thousands of rolls
+plot(seq_along(running), running, type = "l", log = "x", col = "red4",
+     xlab = "number of rolls (log scale)", ylab = "running mean",
+     ylim = c(2.5, 4.5))
+abline(h = 3.5, lwd = 2, lty = 2)
 
-# Plot to demonstrate how sigma affects the spread of the distribution
-plot(x, dnorm(x, mean = 5, sd = 1), type = "l", lwd = 2, col = "black",
-     ylab = "density", main = "Same mu, different sigma")
-lines(x, dnorm(x, mean = 5, sd = 2), lwd = 2, col = "blue")
-lines(x, dnorm(x, mean = 5, sd = 4), lwd = 2, col = "red")
-legend("topright", legend = c("sigma=1", "sigma=2", "sigma=4"),
-       col = c("black","blue","red"), lwd = 2)
 
+# Variance ---------------------------------------------------------------------
 
-# Independence of mu and sigma
-big_mean_small_sd  <- rnorm(10000, mean = 100, sd = 1)
-small_mean_big_sd  <- rnorm(10000, mean = 1,   sd = 20)
+# expectation of the variance of the average in the long-run
 
-c(mean(big_mean_small_sd), sd(big_mean_small_sd))
-c(mean(small_mean_big_sd), sd(small_mean_big_sd))
+# Var(X) = E[X^2] - (E[X])^2
+# Var(X) = E[(X - E[X])2]
 
+# Theoretical Variance
+# E[X^2]
+die <- 1:6
+prob <- 1/6
+die_sqr <- die^2
 
-# Empiral Rule
-z <- rnorm(100000, mean = 0, sd = 1)
-mean(abs(z) < 1)   # within 1 sd
-mean(abs(z) < 2)   # within 2 sd
-mean(abs(z) < 3)   # within 3 sd
+expXsq <- sum(die_sqr * prob) # E[X^2]
 
+sqexpX <- theoretical_expectation^2 # (E[X])^2
 
-# Simulation, Central Limit Theorem --------------------------------------------
+theoretical_var_exp <- expXsq - sqexpX # Var(X)
 
+theoretical_sd_exp <- sqrt(theoretical_var_exp) # SD(X)
 
-# Population
-# Population is intentionally skewed to be able to see how the CTL works 
-# (distribution of sample means is normal)
 
-set.seed(21)
+# Simulated Empirical Variance
 
-population <- rexp(100000, rate = 1)
-hist(population,
-     breaks = 50, col = "grey70", border = "white",
-     main = "Population (skewed)",
-     xlab = "")
-abline(v = mean(population), col = "red", lwd = 2, lty = 1)
-abline(v = median(population), col = "blue", lwd = 2, lty = 1)
+# Running E[X^2]
+running_mean_sq <- cumsum(rolls^2) / seq_along(rolls)
 
-mean(population)
-median(population)
-sd(population)
+# Var(X)
+running_var <- running_mean_sq - running^2
 
-mean(population) - median(population)
+running_sd <- sqrt(running_var)
 
+# Simulation Results
+results <- data.frame(
+  running_mean = running,
+  running_var = running_var,
+  runnning_sd = running_sd
+)
 
 
 
-# Small sample size
-set.seed(22)
-small_sample <- sample(population, size = 5, replace = TRUE)
-hist(small_sample,
-     breaks = 5, col = "grey70", border = "white", replace = TRUE,
-     main = "Small Sample",
-     xlab = "")
+# Checkpoints
+checkpoints <- c(10, 100, 1000, 10000)
+round(running[checkpoints], 4)
+round(running_var[checkpoints], 4)
+round(running_sd[checkpoints], 4)
 
 
-small_mean <- replicate(10000, mean(sample(population, size = 5, replace = TRUE)))
-hist(small_mean,
-     breaks = 50, col = "grey70", border = "white",
-     main = "Small Sample",
-     xlab = "")
-abline(v = mean(small_mean), col = "red", lwd = 2, lty = 1)
-abline(v = median(small_mean), col = "blue", lwd = 2, lty = 1)
+# Plot : Running Variance
+plot(seq_along(rolls), running_var, type = "l", col = "steelblue", lwd = 1.5,
+     xlab = "Number of Rolls (n)", ylab = "Running Variance",
+     main = "Convergence of Sample Variance to Theoretical Var(X)",
+     log = "x")  # log scale on x makes early wobble + late convergence both visible
+abline(h = theoretical_var_exp, col = "red", lwd = 2, lty = 2)
 
-mean(small_mean)
-median(small_mean)
-sd(small_mean)
 
-mean(small_mean) - median(small_mean)
+# Plot: Running SD
+theoretical_sd <- 1.707825
+plot(seq_along(rolls), running_sd, type = "l", col = "darkgreen", lwd = 1.5,
+     xlab = "Number of Rolls (n)", ylab = "Running SD",
+     main = "Convergence of Sample SD to Theoretical SD(X)",
+     log = "x")
+abline(h = theoretical_sd, col = "red", lwd = 2, lty = 2)
 
 
-# Large sample size
-set.seed(23)
 
-large_sample <- sample(population, size = 50, replace = TRUE)
-hist(large_sample,
-     breaks = 50, col = "grey70", border = "white",
-     main = "Large Sample",
-     xlab = "")
-
-
-large_mean <- replicate(10000, mean(sample(population, size = 50, replace = TRUE)))
-hist(large_mean,
-     breaks = 50, col = "grey70", border = "white",
-     main = "Large Sample",
-     xlab = "")
-abline(v = mean(large_mean), col = "red", lwd = 2, lty = 1)
-abline(v = median(large_mean), col = "blue", lwd = 2, lty = 1)
-
-mean(large_mean)
-median(large_mean)
-sd(large_mean)
-
-mean(large_mean) - median(large_mean)
-
-
-
-# Confidence Intervals --------------------------------------------------------
-
-
-true_mu <- mean(population)
-
-
-# Small sample
-set.seed(12)
-ci_small <- t(replicate(10000, {
-  s <- sample(population, size = 5, replace = TRUE)
-  xbar <- mean(s)
-  se   <- sd(s) / sqrt(5)
-  c(lower = xbar - 1.96 * se, upper = xbar + 1.96 * se)
-}))
-
-head(ci_small)
-
-
-covers_small <- ci_small[,"lower"] <= true_mu & true_mu <= ci_small[,"upper"]
-mean(covers_small) # Proportional width of confidence interval for a small sample size
-# 80% of sample have mu
-
-
-
-# Large sample
-set.seed(13)
-ci_large <- t(replicate(10000, {
-  s <- sample(population, size = 100, replace = TRUE)
-  xbar <- mean(s)
-  se   <- sd(s) / sqrt(100)
-  c(lower = xbar - 1.96 * se, upper = xbar + 1.96 * se)
-}))
-
-covers_large <- ci_large[,"lower"] <= true_mu & true_mu <= ci_large[,"upper"]
-mean(covers_large) # Proportional width of confidence interval for a small sample size
-# 93.8% of samples have mu
-
-
-
-# Confidence Intervals for a T-Distribution
-
-# Small sample
-set.seed(14)
-ci_small_t <- t(replicate(10000, {
-  s <- sample(population, size = 5, replace = TRUE)
-  xbar <- mean(s)
-  se   <- sd(s) / sqrt(5)
-  crit <- qt(0.975, df = 5 - 1)
-  c(lower = xbar - crit * se, upper = xbar + crit * se)
-}))
-
-covers_small_t <- ci_small_t[,"lower"] <= true_mu & true_mu <= ci_small_t[,"upper"]
-mean(covers_small_t)
-# 88% of samples contain mu
-
-
-# Large sample
-set.seed(15)
-ci_large_t <- t(replicate(10000, {
-  s <- sample(population, size = 100, replace = TRUE)
-  xbar <- mean(s)
-  se   <- sd(s) / sqrt(100)
-  crit <- qt(0.975, df = 100 - 1)
-  c(lower = xbar - crit * se, upper = xbar + crit * se)
-}))
-
-covers_large_t <- ci_large_t[,"lower"] <= true_mu & true_mu <= ci_large_t[,"upper"]
-mean(covers_large_t)
-# 94% of samples contain mu
-
-
-
-
-x <- seq(-4, 4, length.out = 400)
-plot(x, dnorm(x), type = "l", lwd = 2, ylab = "density", xlab = "",
-     main = "Normal vs t at varying df")
-lines(x, dt(x, df = 4), lwd = 2, col = "firebrick")
-lines(x, dt(x, df = 29), lwd = 2, col = "steelblue", lty = 2)
-legend("topright", bty = "n", lwd = 2,
-       col = c("black", "steelblue", "firebrick"), lty = c(1, 2, 1),
-       legend = c("Normal", "t, df = 29", "t, df = 4 (matches n=5)"))
-
-
-
+# Linearity --------------------------------------------------------------------
 
 

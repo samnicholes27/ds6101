@@ -388,7 +388,7 @@ d_jfk_lax <- d %>%
 # Pooled rate across all days
 p_hat_late_jfk_lax <- mean(d_jfk_lax$arr_delay > 15)   # probability of: event = late
 n_total_jfk_lax     <- length(d_jfk_lax$arr_delay)      # total no. of flights, all days
-p_hat_jfk_lax
+p_hat_late_jfk_lax
 
 # Per day
 daily_jfk_lax <- d_jfk_lax %>% 
@@ -412,15 +412,40 @@ avg_theoretical_var
 
 ```{r}
 # 68-98-99.7 for d$arr_delay
+arr <- d$arr_delay
+m_arr <- mean(arr)
+s_arr <- sd(arr)
 
+emp_rule <- function(x, m, s, k) { # arguments: x = vector, m = mean, s = SD, k = # of SDs
+  mean(x >= m - k*s & x <= m + k*s)
+}
 
-
+sapply(1:3, \(k) emp_rule(arr, m_arr, s_arr, k)) # check SD 1- 3 as k using emp_rule() on d$arr_delay and air_time
 
 
 # 68-95-99.7 for d_jfk_lax$air_time
+air <- d_jfk_lax$air_time
+m_air <- mean(air)
+s_air <- sd(air)
 
+sapply(1:3, \(k) emp_rule(air, m_air, s_air, k))
 
+# air_time passes
+pnorm_air <- 1 - pnorm(360, mean = m_air, sd = s_air)
+pnorm_air
 
+actual_air <- mean(air > 360)
+actual_air
+
+pnorm_air - actual_air
+
+# arr_delay fails
+pnorm_delay <- pnorm(-30, mean = m_arr, sd = s_arr)
+pnorm_delay
+actual_delay <- mean(d$arr_delay < -30)
+actual_delay
+
+pnorm_delay - actual_delay
 
 ```
 
@@ -429,30 +454,51 @@ avg_theoretical_var
 # Part 5 · < or ≤ (8 points)
 
 ## (5a) The daily late count
+P(X < 5) = 0.5232877
+P(X <= 5) = 0.5972603
+Since we are working with a binomial distribution, P(X = 5) can be specifically calculated which results in the difference between P(X < 5) and P(X <= 5).
+
+```{r}
+
+daily_jfk_lax <- d_jfk_lax %>% 
+  group_by(month, day) %>%
+  summarise(total = n(),
+            n_late = sum(arr_delay > 15),
+            .groups = "drop") %>%
+  mutate(theoretical_var = total * p_hat_late_jfk_lax * (1 - p_hat_late_jfk_lax))
+
+n_late <- daily_jfk_lax$n_late
+
+p_less5 <- mean(n_late < 5)     # P(X < 5)
+p_leq5   <- mean(n_late <= 5)    # P(X <= 5)
+
+p_less5
+p_leq5
+
+```
+
 
 ## (5b) air_time
 
+Because air_time is rounded, it becomes discrete. Consequently P(X = 300) is not 0 and has a defined probability,
+```{r}
+
+p_less330 <- mean(d_jfk_lax$air_time < 330,  na.rm = TRUE)
+p_le330   <- mean(d_jfk_lax$air_time <= 330, na.rm = TRUE)
+
+p_less330
+p_le330
+
+```
+
+
 # Part 6 · The staffing sentence (10 points)
 
-*One paragraph, at most 150 words.*
+The flights aren't independent due to weather, airport problems, domino effect from problems of other flight, etc. In 4b the actual, observed variance (436.4323) differed substantially from what would be expected (55.75392) if flights were truly independent. On days where more flights are cancelled, the airports will be understaffed and uneventful days will be overstaffed because of the high degree of variability.
+
 
 # AI disclosure
-
-<!--
-Keep ONE of the two blocks below and delete the other.
-"I did not use an AI assistant" is always acceptable and earns full marks.
--->
-
 ## Prompt log
 
-## Critique
+https://claude.ai/chat/29211949-5478-4121-9a31-d20bb9171729
 
-*150-300 words. Either name something the assistant got wrong and what it would
-have cost, or show the prompts you used trying to break it when it held up.
-Both earn full marks.*
-
-<!-- OR, replacing both sections above:
-
-I did not use an AI assistant on this assignment.
-
--->

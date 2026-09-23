@@ -1,0 +1,107 @@
+---
+title: "Homework 3"
+subtitle: "DATS 6101 · Fall 2026"
+author: "YOUR NAME"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r data}
+library(nycflights13)
+data(flights)
+```
+
+<!--
+The definitions are on the assignment page, and your numbers are checked against
+them, so use them exactly:
+
+  d           rows where both dep_delay and arr_delay are present (327,346 rows)
+  late        arr_delay > 15
+  a day       the calendar date from year, month, day
+  population  d$arr_delay, in Parts 3 to 6; its mean is mu, its sd is sigma
+  seeds       set.seed(6101) on the line before each simulation
+
+Part 1 uses all 336,776 rows instead of d. It says so.
+
+Before you submit: Session > Restart R, then Knit. Every number you state in
+prose must come from inline R code, like this: `r nrow(flights)` rows.
+-->
+
+# Part 1 · A payout table (12 points)
+
+## (a) The payout distribution, and its expectation two ways
+
+## (b) Where the expectation sits
+
+## (c) A fair fee, and a 900-flight day
+
+# Part 2 · Sums are free, variances are not (16 points)
+
+## (a) Daily late counts by airport, and the total
+
+## (b) The covariance terms
+
+## (c) For the planner
+
+# Part 3 · A population you can see (18 points)
+
+## (a) mu and sigma
+
+## (b) The sampling distribution at four sample sizes
+
+## (c) One sample of 400: the SD sentence and the SE sentence
+
+## (d) How many flights
+
+# Part 4 · When n is not n (24 points)
+
+## (a) Sixteen days, 2,000 times
+
+## (b) What the formula says, and random flights
+
+## (c) The effective sample size
+
+## (d) The days as the units
+
+## (e) Which step failed
+
+# Part 5 · A rare rate (12 points)
+
+## (a) Two standard errors, and each against its p
+
+## (b) Flights for a 10% relative error
+
+## (c) If the flights came from three days
+
+# Part 6 · The dashboard sentence (8 points)
+
+*One paragraph, at most 150 words.*
+
+# AI disclosure
+
+<!--
+Keep ONE of the two blocks below and delete the other.
+"I did not use an AI assistant" is always acceptable and earns full marks.
+-->
+
+## Prompt log
+
+## Critique
+
+*150-300 words. Either name something the assistant got wrong and what it would
+have cost, or show the prompts you used trying to break it when it held up.
+Both earn full marks.*
+
+<!-- OR, replacing both sections above:
+
+I did not use an AI assistant on this assignment.
+
+-->

@@ -1,0 +1,159 @@
+---
+title: "Homework 3"
+subtitle: "DATS 6101 · Fall 2026"
+author: "Sam Nicholes"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r data}
+library(nycflights13)
+library(tidyverse)
+data(flights)
+
+d <- flights[complete.cases(flights), ] # data set of complete rows stored as d
+
+```
+
+<!--
+The definitions are on the assignment page, and your numbers are checked against
+them, so use them exactly:
+
+  d           rows where both dep_delay and arr_delay are present (327,346 rows)
+  late        arr_delay > 15
+  a day       the calendar date from year, month, day
+  population  d$arr_delay, in Parts 3 to 6; its mean is mu, its sd is sigma
+  seeds       set.seed(6101) on the line before each simulation
+
+Part 1 uses all 336,776 rows instead of d. It says so.
+
+Before you submit: Session > Restart R, then Knit. Every number you state in
+prose must come from inline R code, like this: `r nrow(flights)` rows.
+-->
+
+# Part 1 · A payout table (12 points)
+## (1a) The payout distribution, and its expectation two ways
+```{r}
+# Build payout for every flight
+flights <- flights %>%
+  mutate(
+    payout = case_when(
+      is.na(dep_delay) ~ 400,
+      !is.na(dep_delay) & is.na(arr_delay) ~ 200,
+      arr_delay > 180 ~ 200,
+      arr_delay > 60 & arr_delay <= 180 ~ 50,
+      TRUE ~ 0
+    )
+  )
+
+# flights$payout # check column values
+
+
+# Report the probability of each payout value
+pCanceled <- mean(is.na(flights$dep_delay))
+pCanceled
+
+pDiverted <- mean(!is.na(flights$dep_delay) & is.na(flights$arr_delay))
+pDiverted
+
+p180Late <- sum(flights$arr_delay > 180, na.rm = TRUE) / nrow(flights)
+p180Late
+
+pLate <- sum(60 < flights$arr_delay & flights$arr_delay <= 180, na.rm = TRUE) / nrow(flights)
+pLate
+
+
+# Compute E[X] two ways - outputs must agree:
+
+# 1) ... from the table
+
+cashCanceled <- 400
+cashDiverted <- 200
+cash180Late <- 200
+cashLate <- 50
+cashOther <- 0 # cancels out
+
+EPayout_theoretical <- (cashCanceled * pCanceled) + (cashDiverted * pDiverted) + (cash180Late * p180Late) + (cashLate * pLate)
+EPayout_theoretical
+
+# 2)  ... using mean() of the payout column
+
+EPayout_actual <- mean(flights$payout)
+EPayout_actual
+
+isTRUE(all.equal(EPayout_theoretical, EPayout_actual))
+EPayout_theoretical == EPayout_actual # Floating point error
+
+```
+
+
+
+## (1b) Where the expectation sits
+The share of expected payouts from cancellations make up the tail of the distribution, and the expected overall payout sits just past the bulk of data (flights with $0 or $50 payouts) toward the skewed tail of the distribution.
+
+```{r}
+
+pCanceled # share of flights that are canceled
+
+cancelContribtuion <- cashCanceled * pCanceled # payout per flight due to cancellations
+cancelShareOfPayout <- cancelContribtuion / EPayout_actual 
+cancelShareOfPayout 
+
+```
+
+
+
+
+## (1c) A fair fee, and a 900-flight day
+
+# Part 2 · Sums are free, variances are not (16 points)
+## (2a) Daily late counts by airport, and the total
+
+## (2b) The covariance terms
+
+## (2c) For the planner
+
+# Part 3 · A population you can see (18 points)
+## (3a) mu and sigma
+
+## (3b) The sampling distribution at four sample sizes
+
+## (3c) One sample of 400: the SD sentence and the SE sentence
+
+## (3d) How many flights
+
+# Part 4 · When n is not n (24 points)
+## (4a) Sixteen days, 2,000 times
+
+## (4b) What the formula says, and random flights
+
+## (4c) The effective sample size
+
+## (4d) The days as the units
+
+## (4e) Which step failed
+
+# Part 5 · A rare rate (12 points)
+## (5a) Two standard errors, and each against its p
+
+## (5b) Flights for a 10% relative error
+
+## (5c) If the flights came from three days
+
+# Part 6 · The dashboard sentence (8 points)
+
+*One paragraph, at most 150 words.*
+
+# AI disclosure
+
+## Prompt log
+
+
