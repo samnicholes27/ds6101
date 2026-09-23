@@ -110,9 +110,16 @@ cancelShareOfPayout
 ```
 
 
-
-
 ## (1c) A fair fee, and a 900-flight day
+A fair fee is the Expectation of the payout, $16.34, with the expected cost for 900 flights per day being $14,705.95. This Expectation is a linear model, meaning independence/dependence of flights is irrelevant. 
+
+```{r}
+E900 <- 900 * EPayout_actual
+E900
+
+```
+
+
 
 # Part 2 · Sums are free, variances are not (16 points)
 ## (2a) Daily late counts by airport, and the total
