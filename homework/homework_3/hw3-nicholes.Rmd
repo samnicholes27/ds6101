@@ -10,6 +10,9 @@ output:
     code_folding: show
 ---
 
+
+https://www.smajhi.com/DATS-6101/homework/hw3.html
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
@@ -44,8 +47,8 @@ prose must come from inline R code, like this: `r nrow(flights)` rows.
 ```{r}
 # Build payout for every flight
 flights <- flights %>%
-  mutate(
-    payout = case_when(
+  dplyr::mutate(
+    payout = dplyr::case_when(
       is.na(dep_delay) ~ 400,
       !is.na(dep_delay) & is.na(arr_delay) ~ 200,
       arr_delay > 180 ~ 200,
@@ -119,14 +122,90 @@ E900
 
 ```
 
-
-
 # Part 2 · Sums are free, variances are not (16 points)
 ## (2a) Daily late counts by airport, and the total
+```{r}
+
+# Late arrival counts for each day and origin ----------------------------------
+d_late_daily_origin <- d %>%
+  dplyr::group_by(origin, day) %>%
+  dplyr::filter(arr_delay > 15) %>%
+  dplyr::summarise(n = n())
+
+
+# 1) Per-airport daily counts --------------------------------------------------
+# Per airport daily  - JFK
+jfk_daily_count <- d_late_daily_origin$n[d_late_daily_origin$origin == "JFK"]
+jfk_mean <- mean(jfk_daily_count) # average across days
+jfk_var <- var(jfk_daily_count) # variance across days
+sqrt(jfk_var)
+
+# Per airport daily  - EWR
+ewr_daily_count <- d_late_daily_origin$n[d_late_daily_origin$origin == "EWR"]
+ewr_mean <- mean(ewr_daily_count) # average across days
+ewr_var <- var(ewr_daily_count) # variance across days
+sqrt(ewr_var)
+
+# Per airport daily  - LGA
+lga_daily_count <- d_late_daily_origin$n[d_late_daily_origin$origin == "LGA"]
+lga_mean <- mean(lga_daily_count) # average across days
+lga_var <- var(lga_daily_count) # variance across days
+sqrt(lga_var)
+
+# 2) Daily total across all three airports --------------------------------------
+# Daily total of the three airports: JFK, EWR, LGA
+d_late_daily_total <- d_late_daily_origin %>%
+  dplyr::group_by(day) %>%
+  dplyr::summarise(total_n = sum(n))
+
+d_late_daily_total_mean <- mean(d_late_daily_total$total_n)
+d_late_daily_total_var <- var(d_late_daily_total$total_n) # by how much the aggregated airports vary on a daily basis
+sqrt(d_late_daily_total_var) # SD - how much the aggregated airports vary on a daily basis, # of flights
+
+
+# 3) Does the mean of the total equal the sum of the three means? --------------
+isTRUE(all.equal((jfk_mean + ewr_mean + lga_mean), d_late_daily_total_mean))
+
+
+# 4) Variance of the total compared to the sum of the three variances ----------
+d_late_daily_total_var / (jfk_var + ewr_var + lga_var)
+
+# Ratio to describe linear relationship:
+#   ratio ~ 1, covariance = 0
+#   ratio > 1, covariance > 0, data vary positively
+#   ratio < 1, covariance < 0, data vary negatively
+
+```
+
 
 ## (2b) The covariance terms
+```{r}
+
+# Compute the 3 covariances between airports:
+jfk_n <- d_late_daily_origin$n[d_late_daily_origin$origin == "JFK"]
+
+ewr_n <- d_late_daily_origin$n[d_late_daily_origin$origin == "EWR"]
+
+lga_n <- d_late_daily_origin$n[d_late_daily_origin$origin == "LGA"]
+
+cov(jfk_n, ewr_n)
+cov(jfk_n, lga_n)
+cov(ewr_n, lga_n)
+
+# Compute 3 correlations between airports:
+cor(jfk_n, ewr_n)
+cor(jfk_n, lga_n)
+cor(ewr_n, lga_n)
+
+
+```
+
 
 ## (2c) For the planner
+```{r}
+
+```
+
 
 # Part 3 · A population you can see (18 points)
 ## (3a) mu and sigma
