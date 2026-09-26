@@ -126,9 +126,11 @@ E900
 ## (2a) Daily late counts by airport, and the total
 ```{r}
 
+d <- d %>% dplyr::mutate(date = lubridate::make_date(year, month, day))
+
 # Late arrival counts for each day and origin ----------------------------------
 d_late_daily_origin <- d %>%
-  dplyr::group_by(origin, day) %>%
+  dplyr::group_by(origin, date) %>%
   dplyr::filter(arr_delay > 15) %>%
   dplyr::summarise(n = n())
 
@@ -155,7 +157,7 @@ sqrt(lga_var)
 # 2) Daily total across all three airports --------------------------------------
 # Daily total of the three airports: JFK, EWR, LGA
 d_late_daily_total <- d_late_daily_origin %>%
-  dplyr::group_by(day) %>%
+  dplyr::group_by(date) %>%
   dplyr::summarise(total_n = sum(n))
 
 d_late_daily_total_mean <- mean(d_late_daily_total$total_n)
@@ -184,33 +186,54 @@ d_late_daily_total_var / (jfk_var + ewr_var + lga_var)
 # Compute the 3 covariances between airports:
 jfk_n <- d_late_daily_origin$n[d_late_daily_origin$origin == "JFK"]
 
+length(jfk_n)
+
 ewr_n <- d_late_daily_origin$n[d_late_daily_origin$origin == "EWR"]
 
 lga_n <- d_late_daily_origin$n[d_late_daily_origin$origin == "LGA"]
 
-cov(jfk_n, ewr_n)
-cov(jfk_n, lga_n)
-cov(ewr_n, lga_n)
+cov_jfk_ewr <- cov(jfk_n, ewr_n)
+cov_jfk_lga <- cov(jfk_n, lga_n)
+cov_ewr_lga <- cov(ewr_n, lga_n)
 
 # Compute 3 correlations between airports:
-cor(jfk_n, ewr_n)
-cor(jfk_n, lga_n)
-cor(ewr_n, lga_n)
+cor_jfk_ewr <- cor(jfk_n, ewr_n)
+cor_jfk_lga <- cor(jfk_n, lga_n)
+cor_ewr_lga <- cor(ewr_n, lga_n)
 
+var_total <- (jfk_var + ewr_var + lga_var) + 2*(cov_jfk_ewr + cov_jfk_lga + cov_ewr_lga)
+var_total
+
+isTRUE(all.equal(d_late_daily_total_var, var_total))
 
 ```
 
 
 ## (2c) For the planner
-```{r}
+The airports at least share airspace, weather, and the same NYC population which drives the covariance and correlation to be positive - the airports will have similar problems with delays. Since the planner is only adding the variances, but not the covariances the planner will understate the day-to-day change.
 
-```
 
+HW Note:
+"The population. In Parts 3 to 6, treat d$arr_delay as the entire population. Its mean is μ and its standard deviation is σ. sd() divides by n−1n−1 rather than by the population size; with 327,346 rows the difference is in the fifth significant digit, so either is fine."
 
 # Part 3 · A population you can see (18 points)
 ## (3a) mu and sigma
+```{r}
+
+mu <- mean(d$arr_delay) # population mean
+sigma <- sd(d$arr_delay) # population sd
+mu
+sigma
+
+```
 
 ## (3b) The sampling distribution at four sample sizes
+```{r}
+
+
+
+```
+
 
 ## (3c) One sample of 400: the SD sentence and the SE sentence
 
