@@ -24,6 +24,7 @@ data(flights)
 
 d <- flights[complete.cases(flights), ] # data set of complete rows stored as d
 
+
 ```
 
 <!--
@@ -220,15 +221,44 @@ HW Note:
 ## (3a) mu and sigma
 ```{r}
 
-mu <- mean(d$arr_delay) # population mean
-sigma <- sd(d$arr_delay) # population sd
+population_flights <- d$arr_delay
+mu <- mean(population_flights) # population mean
+sigma <- sd(population_flights) # population sd
 mu
 sigma
 
 ```
 
 ## (3b) The sampling distribution at four sample sizes
+Standard error takes into account how the data are spread, but in terms of the center or the direction of skewness it is independent.
 ```{r}
+set.seed(6101)
+
+# draw a sample of n, 5000 times and calculate a mean for each of the 5000 samples: result is 5000 means for each sampling
+means25 <- colMeans(replicate(5000, sample(population_flights, 25, replace = TRUE)))
+length(means25)
+means100 <- colMeans(replicate(5000, sample(population_flights, 100, replace = TRUE)))
+length(means100)
+means400 <- colMeans(replicate(5000, sample(population_flights, 400, replace = TRUE)))
+length(means400)
+means1600 <- colMeans(replicate(5000, sample(population_flights, 1600, replace = TRUE)))
+length(means1600)
+
+# standard deviation and standard error
+sd(means25)
+sigma / sqrt(25)
+
+sd(means100)
+sigma / sqrt(100)
+
+sd(means400)
+sigma / sqrt(400)
+
+sd(means1600)
+sigma / sqrt(1600)
+
+
+hist(d$arr_delay) # right skewed distribution 
 
 
 
@@ -236,26 +266,145 @@ sigma
 
 
 ## (3c) One sample of 400: the SD sentence and the SE sentence
+The mean (6.79) is the center of the distribution.
+The standard deviation (45.98) is the spread of the data across the distribution in minutes. 1 Standard deviation is 45.98 minutes.
+The standard error of the mean (2.23) is the standard deviation of the mean for this sample size at 400. Also in minutes.
+Thus, the mean is 6.79, +- 2.23 minutes for a random sample of 400 flights.
+```{r}
+set.seed(6101)
+mean(sample(population_flights, 400, replace = TRUE))
+sd(sample(population_flights, 400, replace = TRUE))
+sigma/sqrt(400)
+
+```
+
 
 ## (3d) How many flights
+To get a narrower standard error it requires increase the sample size by 4x. In this case 1993 flights are needed for an SE of 1 minute. Four times this (7969) is required for an additional 50 seconds shaved off the SE. This is a case of diminishing returns due to the exponential sizing requirement to get a tighter SE.
+```{r}
+# SE = 1 minute
+n_1min <- (sigma / 1)^2
+n_1min
+
+# SE = 0.5 minute
+n_half <- (sigma / 0.5)^2
+n_half
+
+```
+
 
 # Part 4 · When n is not n (24 points)
 ## (4a) Sixteen days, 2,000 times
 
+```{r}
+set.seed(6101)
+by_day <- split(d$arr_delay, d$date)
+
+sampleDays <- replicate(2000, unlist(by_day[sample(names(by_day), 16)]), simplify = FALSE)
+n_per_replicate <- sapply(sampleDays, length)
+means_per_replicate <- sapply(sampleDays, mean)
+
+mean_of_n_replicates <- mean(n_per_replicate)
+sd(means_per_replicate)
+
+se_real <- sd(means_per_replicate)
+
+se_estimate_replicates <- sigma / sqrt(mean_of_n_replicates)
+se_estimate_replicates
+
+
+```
+
+
 ## (4b) What the formula says, and random flights
+```{r}
+
+sampleFlights <- replicate(2000, mean(sample(population_flights, round(mean_of_n_replicates), replace = TRUE)))
+se_empirical_flights <- sd(sampleFlights)
+se_empirical_flights
+
+se_ratio <- se_real / se_estimate_replicates
+se_ratio # actual SE is 11x larger than estimate. SE estimate is assuming independence. SE actual is results from clustering from sampling scheme (sampling days instead of flights)
+
+
+```
+
 
 ## (4c) The effective sample size
+```{r}
+
+n_effective <- (sigma / se_real)^2
+n_effective
+
+fraction <- n_effective / mean_of_n_replicates
+fraction
+
+# Analyst's sampling scheme results in a small sample size that is independent and random. IE small sample size of independent, random flights results in a large SE
+
+```
+
 
 ## (4d) The days as the units
+The SE is similar to what was calculated in part a, meaning that days are still treated as the unit.
+```{r}
+
+daily_means <- sapply(by_day, mean) 
+sd_daily_means <- sd(daily_means)
+sd_daily_means
+
+se_by_day_unit <- sd_daily_means / sqrt(16)
+se_by_day_unit
+
+```
+
 
 ## (4e) Which step failed
+Calculating the SE requires independent observations at the level of the unit of analysis (step 2), in this case, the flights. The sampling scheme developed by the analyst does not allow independence among flights as days were randomly sampled with all the flights of a given day. This results in clustering of flights as they'll all share underlying characteristics. The result of this clustering is positive covariances among flights since they share certain contextual characteristics. This also results in a larger SE than what would otherwise be estimated with truly independent, randomly sample flights rather than days. 
+
 
 # Part 5 · A rare rate (12 points)
 ## (5a) Two standard errors, and each against its p
+For a rare outcome (> 180 minutes late), the proportion of flights, or rate, so late is small to begin with thus requiring a larger sample to meet the specified SE.
+```{r}
+
+p15 <- mean(d$arr_delay > 15)
+p15
+p180 <- mean(d$arr_delay > 180)
+p180
+
+se15 <- sqrt(p15 * (1 - p15) / 1000)
+se15
+se180 <- sqrt(p180 * (1 - p180) / 1000)
+se180
+
+se15 / p15
+se180 / p180
+
+
+
+```
+
 
 ## (5b) Flights for a 10% relative error
+```{r}
+# an SE that is 10% of p15, p180
+se15_10 <- 0.1 * p15
+se15_10
+
+se180_10 <- 0.1 * p180
+se180_10
+
+n15_10 <- p15 * (1 - p15) / (se15_10^2)
+round(n15_10)
+
+n180_10 <- p180 * (1 - p180) / (se180_10^2)
+round(n180_10)
+
+```
+
 
 ## (5c) If the flights came from three days
+If the flights are are sample from 3 days there would be a clustering effect of the flights and an inflation of the SE as a result.
 
 # Part 6 · The dashboard sentence (8 points)
 
