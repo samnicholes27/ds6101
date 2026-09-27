@@ -407,11 +407,10 @@ round(n180_10)
 If the flights are are sample from 3 days there would be a clustering effect of the flights and an inflation of the SE as a result.
 
 # Part 6 · The dashboard sentence (8 points)
+This estimate of a mean of 5.8 minutes with an SE of 0.27 minutes is assuming that all flights over March are independent, which isn't the case. The flights will be correlated. This assumption falsely shrinks the SE. In part 4, where the flights were days rather than flights were sampled, the estimated SE was 0.373 when in reality the actual SE was 4.12. Stating that a difference of half a minute would falsely alert to deviations that aren't really deviations.
 
-*One paragraph, at most 150 words.*
 
 # AI disclosure
-
 ## Prompt log
-
+https://claude.ai/share/5df3e1e2-f952-4706-9a7b-2b9c1bfa47f8
 
