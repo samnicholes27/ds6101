@@ -56,6 +56,11 @@ hist(sim_t, breaks = 50, freq = FALSE)
 curve(dt(x, df = 39), col = "grey50", add = TRUE, lwd = 2)
 abline(v = mean(sim_t), col = "red", lwd = 2) # Center of simulated, T0 ~ H0
 abline(v = tstat, col = "blue", lwd = 2) # Observed t from sample, TS ~ -2.7
+legend("topright",
+       legend = c("Mean of simulated t", "Observed t"),
+       col    = c("red", "blue"),
+       lwd    = 2,
+       bty    = "n")
 
 
 

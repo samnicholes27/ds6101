@@ -1,0 +1,108 @@
+---
+title: "Homework 4"
+subtitle: "DATS 6101 · Fall 2026"
+author: "Sam Nicholes"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r data}
+library(nycflights13)
+library(tidyverse)
+data(flights)
+```
+
+<!--
+The definitions are on the assignment page, and your numbers are checked against
+them, so use them exactly:
+
+  d           rows where both dep_delay and arr_delay are present (327,346 rows)
+  population  d$arr_delay; its mean is mu, its sd is sigma
+  a day       the calendar date from year, month, day
+  interval    mean(x) + c(-1, 1) * qt(0.975, n - 1) * sd(x) / sqrt(n)
+  coverage    the share of intervals that contain mu -- counted, not assumed
+  seeds       set.seed(6101) on the line before each simulation
+  reps        2,000 repetitions unless a part says otherwise
+
+Before you submit: Session > Restart R, then Knit. Every number you state in
+prose must come from inline R code, like this: `r nrow(flights)` rows.
+-->
+
+# Part 1 · The theorem is about the mean (12 points)
+
+## (a) How skewed is arr_delay
+
+## (b) The sampling distribution at n = 5, 30, 200
+
+## (c) What became Normal, and what did not
+
+# Part 2 · Counting the coverage (20 points)
+
+## (a) Coverage at three sample sizes
+
+## (b) The misses, and which side they are on
+
+## (c) For the colleague with ten flights
+
+# Part 3 · What the t fixes (10 points)
+
+## (a) The same intervals with 1.96
+
+## (b) What the t corrects for, and what it cannot
+
+# Part 4 · The interval that is not about the population (20 points)
+
+## (a) One whole day, two thousand times
+
+## (b) The same number of random flights
+
+## (c) Which step failed
+
+## (d) The fix, measured
+
+# Part 5 · An interval for a rare rate (16 points)
+
+## (a) p, and np at n = 200
+
+## (b) The textbook interval
+
+## (c) prop.test
+
+## (d) What you would report
+
+# Part 6 · The sentence, and what precision costs (12 points)
+
+## (a) One sample, one interval
+
+## (b) The sentence, and two that are wrong
+
+## (c) The cost of halving the width
+
+# AI disclosure
+
+<!--
+Keep ONE of the two blocks below and delete the other.
+"I did not use an AI assistant" is always acceptable and earns full marks.
+-->
+
+## Prompt log
+
+## Critique
+
+*150-300 words. Either name something the assistant got wrong and what it would
+have cost, or show the prompts you used trying to break it when it held up.
+Both earn full marks.*
+
+<!-- OR, replacing both sections above:
+
+I did not use an AI assistant on this assignment.
+
+-->
