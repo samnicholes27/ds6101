@@ -28,8 +28,15 @@ population <- d$arr_delay
 mu <- mean(population)
 sigma <- sd(population)
 
-
 ```
+Confirm observation count for for `d`: `r nrow(d)`
+
+Population defined as `d$arr_delay`
+
+Mu: `r round(mean(population), 2)`
+
+Sigma: `r round(sd(population), 2)`
+
 
 <!--
 The definitions are on the assignment page, and your numbers are checked against
@@ -50,30 +57,111 @@ prose must come from inline R code, like this: `r nrow(flights)` rows.
 # Part 1 · The theorem is about the mean (12 points)
 
 ## (1a) How skewed is arr_delay
-Skewness of d$arr_delay: `r skew`.
-
 ```{r}
-skew <- mean((population - mu)^3) / sigma^3
+skewness <- function(x) mean((x - mean(x))^3) / sd(x)^3 # define skew function
 
+pop_skew <- skewness(population)
 
 ```
+Skewness of `arr_delay`: `r round(pop_skew, 2)`.
 
 
 ## (1b) The sampling distribution at n = 5, 30, 200
 ```{r}
 
+# Define sample sizes and replicates
+n5 <- 5
+n30 <- 30
+n200 <- 200
+reps <- 5000
+
+# Define sample function for simulation replicability
+# n = sample size
+# reps = number of replications to perform for simulation
+# pop = population to sample from
+sim_means <- function(n, reps, pop) {
+  set.seed(6101)
+  replicate(reps, mean(sample(pop, n, replace = TRUE)))
+}
+
+# 5000 means of sample size, n
+mean_5 <- sim_means(n5, reps, population) 
+mean_30 <- sim_means(n30, reps, population)
+mean_200 <- sim_means(n200, reps, population)
+
+# all means of 5000 of sample size, n
+all_means_5000 <- tibble(
+  n = rep(c(n5, n30, n200), each = reps),
+  xbar = c(mean_5, mean_30, mean_200))
+head(all_means_5000, 5)
+
+# grand means and associated stats
+grand_stats <- tibble(
+  n = c(n5, n30, n200),
+  means = c(mean(mean_5), mean(mean_30), mean(mean_200)), # grand means at sample size n
+  sd = c(sd(mean_5), sd(mean_30), sd(mean_200)), # sd of means at sample size n
+  skew = c(skewness(mean_5), skewness(mean_30), skewness(mean_200)) # skew of means at sample size n
+)
+
+# 3 histograms
+ggplot(all_means_5000, aes(xbar)) +
+  geom_histogram(bins = 40) +
+  facet_wrap(~ n, nrow = 1, scales = "free_x", labeller = label_both) +
+  labs(title = "Histograms of 5000 Simulated Sampled Means at: \n n = 5, 30, 200", 
+       x = "Value of sampled means (minutes)", 
+       y = "Count of means")
+
 ```
 
 
 ## (1c) What became Normal, and what did not
-```{r}
-
-```
-
+The skewness for each sample size (5, 30, 200) are: `r round(grand_stats[1, 4], 2)`, `r round(grand_stats[2, 4], 2)`, and `r round(grand_stats[3, 4], 2)`, respectively. Sample size, n = 5, is the most skewed, resembling the population from which it was sampled (`r round(pop_skew, 2)`). As sample size increases, the distribution converges on normality, where n = 200 is closest to normality.
 
 # Part 2 · Counting the coverage (20 points)
 
 ## (2a) Coverage at three sample sizes
+```{r}
+n10 <- 10
+reps2 <- 2000
+
+
+sim_t_stats <- function(n, reps, pop) {
+  set.seed(6101)
+  out <- replicate(reps, { # specify replicates
+    x <- sample(pop, n, replace = TRUE) # draw samples of size n
+    c(xbar = mean(x), s = sd(x)) # calculate mean and sd of each sample of size n
+  })
+  tibble(xbar = out["xbar", ], s = out["s", ]) # output as tibble
+}
+
+sim_2k_means10  <- sim_t_stats(n10,  reps2, population)
+sim_2k_means30  <- sim_t_stats(n30,  reps2, population)
+sim_2k_means200 <- sim_t_stats(n200, reps2, population)
+
+
+# Function to get confidence intervals for each sample and if sample CI includes:
+# stats is the tibble from sim_t_stats with mean and sd
+# n is sample of size n
+# mu is population mean
+t_coverage <- function(stats, n, mu) {
+  half <- qt(0.975, n - 1) * stats$s / sqrt(n) # calculate half of confidence interval for each sample of size n
+  mean(stats$xbar - half <= mu & mu <= stats$xbar + half) # proportions of confidence intervals that contain mu
+}
+
+# Coverage for each sample of size n
+cov_10  <- t_coverage(sim_2k_means10,  n10,  mu)
+cov_30  <- t_coverage(sim_2k_means30,  n30,  mu)
+cov_200 <- t_coverage(sim_2k_means200, n200, mu)
+
+
+```
+For each sample size (n = 10, 30, 200) at 2000 replications, the respective coverages are:
+n = 10: `r cov_10`
+
+n = 30: `r cov_30`
+
+n = 200:`r cov_200`
+
 
 ## (2b) The misses, and which side they are on
 
