@@ -1680,18 +1680,147 @@ closest to normality.</p>
 <h1>Part 2 · Counting the coverage (20 points)</h1>
 <div id="a-coverage-at-three-sample-sizes" class="section level2">
 <h2>(2a) Coverage at three sample sizes</h2>
+<pre class="r"><code>n10 &lt;- 10
+reps2 &lt;- 2000
+
+
+sim_t_stats &lt;- function(n, reps, pop) {
+  set.seed(6101)
+  out &lt;- replicate(reps, { # specify replicates
+    x &lt;- sample(pop, n, replace = TRUE) # draw samples of size n
+    c(xbar = mean(x), s = sd(x)) # calculate mean and sd of each sample of size n
+  })
+  tibble(xbar = out[&quot;xbar&quot;, ], s = out[&quot;s&quot;, ]) # output as tibble
+}
+
+sim_2k_means10  &lt;- sim_t_stats(n10,  reps2, population)
+sim_2k_means30  &lt;- sim_t_stats(n30,  reps2, population)
+sim_2k_means200 &lt;- sim_t_stats(n200, reps2, population)
+
+
+# Function to get confidence intervals for each sample and if sample CI includes:
+# stats is the tibble from sim_t_stats with mean and sd
+# n is sample of size n
+# mu is population mean
+t_coverage &lt;- function(stats, n, mu) {
+  half &lt;- qt(0.975, n - 1) * stats$s / sqrt(n) # calculate half of confidence interval for each sample of size n
+  mean(stats$xbar - half &lt;= mu &amp; mu &lt;= stats$xbar + half) # proportions of confidence intervals that contain mu
+}
+
+# Coverage for each sample of size n
+cov_10  &lt;- t_coverage(sim_2k_means10,  n10,  mu)
+cov_30  &lt;- t_coverage(sim_2k_means30,  n30,  mu)
+cov_200 &lt;- t_coverage(sim_2k_means200, n200, mu)
+cov_10</code></pre>
+<pre><code>## [1] 0.859</code></pre>
+<pre class="r"><code>cov_30</code></pre>
+<pre><code>## [1] 0.894</code></pre>
+<pre class="r"><code>cov_200</code></pre>
+<pre><code>## [1] 0.9375</code></pre>
+<p>For each sample size (n = 10, 30, 200) at 2000 replications, the
+respective coverages are:</p>
+<p>n = 10: 0.859</p>
+<p>n = 30: 0.894</p>
+<p>n = 200: 0.9375</p>
 </div>
 <div id="b-the-misses-and-which-side-they-are-on" class="section level2">
 <h2>(2b) The misses, and which side they are on</h2>
+<pre class="r"><code># Function to get proportion of sample CIs where CI is below MU
+# stats is the tibble from sim_t_stats with mean and sd
+# n is sample of size n
+# mu is population mean
+t_miss_summary &lt;- function(stats, n, mu) {
+  margin &lt;- qt(0.975, n - 1) * stats$s / sqrt(n)  # half-width of each interval
+  lower  &lt;- stats$xbar - margin
+  upper  &lt;- stats$xbar + margin
+
+  covered    &lt;- lower &lt;= mu &amp; mu &lt;= upper # is mu included in CI
+  miss_below &lt;- upper &lt; mu      # whole interval left of mu
+  miss_above &lt;- lower &gt; mu      # whole interval right of mu
+
+  tibble(
+    n           = n,
+    coverage    = mean(covered), # proportion of samples that include mu
+    n_miss      = sum(!covered), # proportion of samples that exclude mu
+    share_below = sum(miss_below) / sum(!covered) # proportion of samples where CI is below MU
+  )
+}
+
+miss_tbl &lt;- bind_rows(
+  t_miss_summary(sim_2k_means10,  n10,  mu),
+  t_miss_summary(sim_2k_means30,  n30,  mu),
+  t_miss_summary(sim_2k_means200, n200, mu)
+)
+
+miss_tbl</code></pre>
+<pre><code>## # A tibble: 3 × 4
+##       n coverage n_miss share_below
+##   &lt;dbl&gt;    &lt;dbl&gt;  &lt;int&gt;       &lt;dbl&gt;
+## 1    10    0.859    282       0.996
+## 2    30    0.894    212       0.981
+## 3   200    0.938    125       0.816</code></pre>
+<p>None of the given sample sizes achieved 95% coverage. All fell below,
+with n = 200 coming closest at 0.9375. For each sample CI, the majority
+of CIs that did not include mu, were below mu, because the the extreme
+values from a right-skewed distribution pull mu to the right.</p>
 </div>
 <div id="c-for-the-colleague-with-ten-flights" class="section level2">
 <h2>(2c) For the colleague with ten flights</h2>
+<pre class="r"><code># Function to get confidence intervals for each sample and if sample CI includes:
+# stats is the tibble from sim_t_stats with mean and sd
+# n is sample of size n
+# mu is population mean
+t_99_coverage &lt;- function(stats, n, mu) {
+  half &lt;- qt(0.995, n - 1) * stats$s / sqrt(n) # calculate half of confidence interval for each sample of size n
+  mean(stats$xbar - half &lt;= mu &amp; mu &lt;= stats$xbar + half) # proportions of confidence intervals that contain mu
+}
+
+# Coverage for each sample of size n
+cov_10_99  &lt;- t_99_coverage(sim_2k_means10,  n10,  mu)
+cov_30_99  &lt;- t_99_coverage(sim_2k_means30,  n30,  mu)
+cov_200_99 &lt;- t_99_coverage(sim_2k_means200, n200, mu)
+cov_10_99</code></pre>
+<pre><code>## [1] 0.93</code></pre>
+<pre class="r"><code>cov_30_99</code></pre>
+<pre><code>## [1] 0.95</code></pre>
+<pre class="r"><code>cov_200_99</code></pre>
+<pre><code>## [1] 0.98</code></pre>
+<p>Increasing the confidence level will widen the confidence interval,
+but precision is the cost in estimating mu from widening the interval.
+For example, at 95% confidence the coverage is as stated previously:
+0.86, 0.89, 0.94 (n = 10, 30 200). When confidence is increased, the
+proportion of intervals that contain mu increases: 0.93, 0.95, 0.98 (n =
+10, 30, 200).</p>
 </div>
 </div>
 <div id="part-3-what-the-t-fixes-10-points" class="section level1">
 <h1>Part 3 · What the t fixes (10 points)</h1>
 <div id="a-the-same-intervals-with-1.96" class="section level2">
 <h2>(3a) The same intervals with 1.96</h2>
+<pre class="r"><code># Function to get confidence intervals using qnorm() for each sample and if sample CI:
+# stats is the tibble from sim_t_stats with mean and sd
+# n is sample of size n
+# mu is population mean
+norm_coverage &lt;- function(stats, n, mu) {
+  half &lt;- qnorm(0.975, n - 1) * stats$s / sqrt(n) # calculate half of confidence interval for each sample of size n
+  mean(stats$xbar - half &lt;= mu &amp; mu &lt;= stats$xbar + half) # proportions of confidence intervals that contain mu
+}
+
+cov_10</code></pre>
+<pre><code>## [1] 0.859</code></pre>
+<pre class="r"><code>cov_30</code></pre>
+<pre><code>## [1] 0.894</code></pre>
+<pre class="r"><code>cov_200</code></pre>
+<pre><code>## [1] 0.9375</code></pre>
+<pre class="r"><code>norm_cov_10 &lt;- norm_coverage(sim_2k_means10,  n10,  mu)
+norm_cov_10</code></pre>
+<pre><code>## [1] 1</code></pre>
+<pre class="r"><code>norm_cov_30 &lt;- norm_coverage(sim_2k_means10,  n30,  mu)
+norm_cov_30</code></pre>
+<pre><code>## [1] 1</code></pre>
+<pre class="r"><code>norm_cov_200 &lt;- norm_coverage(sim_2k_means10,  n200,  mu)
+norm_cov_200</code></pre>
+<pre><code>## [1] 1</code></pre>
 </div>
 <div id="b-what-the-t-corrects-for-and-what-it-cannot" class="section level2">
 <h2>(3b) What the t corrects for, and what it cannot</h2>
