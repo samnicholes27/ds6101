@@ -18,6 +18,17 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(nycflights13)
 library(tidyverse)
 data(flights)
+
+d <- flights[complete.cases(flights), ] # data set of complete rows stored as d
+
+# A day is a calendar date built from year, month and day.
+d <- d %>% dplyr::mutate(date = lubridate::make_date(year, month, day))
+
+population <- d$arr_delay
+mu <- mean(population)
+sigma <- sd(population)
+
+
 ```
 
 <!--
@@ -38,53 +49,69 @@ prose must come from inline R code, like this: `r nrow(flights)` rows.
 
 # Part 1 · The theorem is about the mean (12 points)
 
-## (a) How skewed is arr_delay
+## (1a) How skewed is arr_delay
+Skewness of d$arr_delay: `r skew`.
 
-## (b) The sampling distribution at n = 5, 30, 200
+```{r}
+skew <- mean((population - mu)^3) / sigma^3
 
-## (c) What became Normal, and what did not
+
+```
+
+
+## (1b) The sampling distribution at n = 5, 30, 200
+```{r}
+
+```
+
+
+## (1c) What became Normal, and what did not
+```{r}
+
+```
+
 
 # Part 2 · Counting the coverage (20 points)
 
-## (a) Coverage at three sample sizes
+## (2a) Coverage at three sample sizes
 
-## (b) The misses, and which side they are on
+## (2b) The misses, and which side they are on
 
-## (c) For the colleague with ten flights
+## (2c) For the colleague with ten flights
 
 # Part 3 · What the t fixes (10 points)
 
-## (a) The same intervals with 1.96
+## (3a) The same intervals with 1.96
 
-## (b) What the t corrects for, and what it cannot
+## (3b) What the t corrects for, and what it cannot
 
 # Part 4 · The interval that is not about the population (20 points)
 
-## (a) One whole day, two thousand times
+## (4a) One whole day, two thousand times
 
-## (b) The same number of random flights
+## (4b) The same number of random flights
 
-## (c) Which step failed
+## (4c) Which step failed
 
-## (d) The fix, measured
+## (4d) The fix, measured
 
 # Part 5 · An interval for a rare rate (16 points)
 
-## (a) p, and np at n = 200
+## (5a) p, and np at n = 200
 
-## (b) The textbook interval
+## (5b) The textbook interval
 
-## (c) prop.test
+## (5c) prop.test
 
-## (d) What you would report
+## (5d) What you would report
 
 # Part 6 · The sentence, and what precision costs (12 points)
 
-## (a) One sample, one interval
+## (6a) One sample, one interval
 
-## (b) The sentence, and two that are wrong
+## (6b) The sentence, and two that are wrong
 
-## (c) The cost of halving the width
+## (6c) The cost of halving the width
 
 # AI disclosure
 
