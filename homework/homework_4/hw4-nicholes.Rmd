@@ -10,6 +10,11 @@ output:
     code_folding: show
 ---
 
+
+https://www.smajhi.com/DATS-6101/homework/hw4.html#ai-disclosure-required
+
+https://claude.ai/chat/b170d8f8-6fcf-4a6f-b8c1-06f55734c649
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
