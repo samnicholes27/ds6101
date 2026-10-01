@@ -259,12 +259,54 @@ The t-distribution corrects for a narrower confidence interval that would be gen
 # Part 4 · The interval that is not about the population (20 points)
 
 ## (4a) One whole day, two thousand times
+```{r}
+
+# one row per calendar date: flights that day, mean and sd of arr_delay
+day_stats <- d %>%
+  group_by(date) %>%
+  summarise(n = n(), xbar = mean(arr_delay), s = sd(arr_delay))
+
+set.seed(6101)
+
+# reps2 = 2000 from above
+sample_days <- day_stats[sample(nrow(day_stats), reps2, replace = TRUE), ] 
+
+ci_days_half    <- qt(0.975, sample_days$n - 1) * sample_days$s / sqrt(sample_days$n)  # half of CI
+ci_days_lower   <- sample_days$xbar - ci_days_half # lower CI bound
+ci_days_upper   <- sample_days$xbar + ci_days_half # upper CI bound
+covered_days <- ci_days_lower <= mu & mu <= ci_days_upper # is mu in interval
+
+avg_flights <- mean(sample_days$n) # average flights per interval
+cov_days     <- mean(covered_days) # share of intervals that contain mu
+avg_width   <- mean(ci_days_upper - ci_days_lower)   # average width of intervals
+
+```
+Average number of flights per interval: `r round(avg_flights, 2)`
+
+Proportion of CIs that include mu: `r round(cov_days, 2)`
+
+Average width of intervals: `r round(avg_width, 2)`
+
+
 
 ## (4b) The same number of random flights
+```{r}
+
+```
+
 
 ## (4c) Which step failed
+```{r}
+
+```
+
 
 ## (4d) The fix, measured
+```{r}
+
+```
+
+
 
 # Part 5 · An interval for a rare rate (16 points)
 
@@ -275,6 +317,7 @@ The t-distribution corrects for a narrower confidence interval that would be gen
 ## (5c) prop.test
 
 ## (5d) What you would report
+
 
 # Part 6 · The sentence, and what precision costs (12 points)
 
