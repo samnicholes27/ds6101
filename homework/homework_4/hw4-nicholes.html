@@ -11,7 +11,7 @@
 
 <meta name="author" content="Sam Nicholes" />
 
-<meta name="date" content="2026-09-30" />
+<meta name="date" content="2026-10-02" />
 
 <title>Homework 4</title>
 
@@ -1570,11 +1570,13 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Homework 4</h1>
 <h3 class="subtitle">DATS 6101 · Fall 2026</h3>
 <h4 class="author">Sam Nicholes</h4>
-<h4 class="date">2026-09-30</h4>
+<h4 class="date">2026-10-02</h4>
 
 </div>
 
 
+<p><a href="https://www.smajhi.com/DATS-6101/homework/hw4.html#ai-disclosure-required" class="uri">https://www.smajhi.com/DATS-6101/homework/hw4.html#ai-disclosure-required</a></p>
+<p><a href="https://claude.ai/chat/b170d8f8-6fcf-4a6f-b8c1-06f55734c649" class="uri">https://claude.ai/chat/b170d8f8-6fcf-4a6f-b8c1-06f55734c649</a></p>
 <pre class="r"><code>library(nycflights13)
 library(tidyverse)
 data(flights)
@@ -1851,23 +1853,125 @@ sample_days &lt;- day_stats[sample(nrow(day_stats), reps2, replace = TRUE), ]
 ci_days_half    &lt;- qt(0.975, sample_days$n - 1) * sample_days$s / sqrt(sample_days$n)  # half of CI
 ci_days_lower   &lt;- sample_days$xbar - ci_days_half # lower CI bound
 ci_days_upper   &lt;- sample_days$xbar + ci_days_half # upper CI bound
-covered &lt;- ci_days_lower &lt;= mu &amp; mu &lt;= ci_days_upper # is mu in interval
+covered_days &lt;- ci_days_lower &lt;= mu &amp; mu &lt;= ci_days_upper # is mu in interval
 
 avg_flights &lt;- mean(sample_days$n) # average flights per interval
-cov_day     &lt;- mean(covered) # coverage (includes mu)
-avg_width   &lt;- mean(ci_days_upper - ci_days_lower)   # average width of intervals</code></pre>
+avg_flights</code></pre>
+<pre><code>## [1] 896.5565</code></pre>
+<pre class="r"><code>cov_days     &lt;- mean(covered_days) # share of intervals that contain mu
+cov_days</code></pre>
+<pre><code>## [1] 0.113</code></pre>
+<pre class="r"><code>avg_width   &lt;- mean(ci_days_upper - ci_days_lower)   # average width of intervals
+avg_width</code></pre>
+<pre><code>## [1] 5.144544</code></pre>
 <p>Average number of flights per interval: 896.56</p>
 <p>Proportion of CIs that include mu: 0.11</p>
 <p>Average width of intervals: 5.14</p>
 </div>
 <div id="b-the-same-number-of-random-flights" class="section level2">
 <h2>(4b) The same number of random flights</h2>
+<pre class="r"><code>set.seed(6101)
+
+# one random sample from the whole population for each day-interval&#39;s sample size
+pop_stats &lt;- sapply(sample_days$n, function(k) { # same number of flights
+  x &lt;- sample(population, k, replace = TRUE) # sample from entire population
+  c(xbar = mean(x), s = sd(x)) # xbar and sd for each sample
+})   # 2 x 2000 matrix: row &quot;xbar&quot; and row &quot;s&quot;
+
+ci_pop_half  &lt;- qt(0.975, sample_days$n - 1) * pop_stats[&quot;s&quot;, ] / sqrt(sample_days$n) # half width of CI
+ci_pop_lower &lt;- pop_stats[&quot;xbar&quot;, ] - ci_pop_half
+ci_pop_upper &lt;- pop_stats[&quot;xbar&quot;, ] + ci_pop_half
+covered_pop  &lt;- ci_pop_lower &lt;= mu &amp; mu &lt;= ci_pop_upper
+
+cov_pop       &lt;- mean(covered_pop)                 # share of intervals that contain mu
+avg_width_pop &lt;- mean(ci_pop_upper - ci_pop_lower)
+
+
+# compare whole day sampling to full population sampling
+compare_days &lt;- tibble(
+  sampling     = c(&quot;One whole day&quot;, &quot;Random flights, whole file&quot;),
+  avg_flights  = c(mean(sample_days$n), mean(sample_days$n)),
+  coverage     = c(cov_days, cov_pop),
+  avg_width    = c(avg_width, avg_width_pop)
+)
+knitr::kable(compare_days, digits = 2)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">sampling</th>
+<th align="right">avg_flights</th>
+<th align="right">coverage</th>
+<th align="right">avg_width</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">One whole day</td>
+<td align="right">896.56</td>
+<td align="right">0.11</td>
+<td align="right">5.14</td>
+</tr>
+<tr class="even">
+<td align="left">Random flights, whole file</td>
+<td align="right">896.56</td>
+<td align="right">0.95</td>
+<td align="right">5.87</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>se_days &lt;- mean(sample_days$s / sqrt(sample_days$n))  # average SE, day intervals
+se_pop  &lt;- mean(pop_stats[&quot;s&quot;, ] / sqrt(sample_days$n))  # average SE, random samples</code></pre>
 </div>
 <div id="c-which-step-failed" class="section level2">
 <h2>(4c) Which step failed</h2>
+<p>Sampling a whole day lacks independence among flights (step 2 fails
+in the derivation), so the variance within a day shrinks and the
+standard error is too small (1.31. The CI is too narrow and centered on
+a day-specific mean that is often far from mu (the interval is for the
+day not for mu), so it rarely captures mu (0.11). Widening in the
+intervals won’t help as a result since the days interval is so far from
+mu to begin with. Truly independent sampling captured mu in 0.95 of
+intervals, close to the nominal 95%.</p>
 </div>
 <div id="d-the-fix-measured" class="section level2">
 <h2>(4d) The fix, measured</h2>
+<pre class="r"><code># the 365 daily means (one number per calendar date)
+daily_means &lt;- day_stats$xbar
+head(daily_means, 10)</code></pre>
+<pre><code>##  [1] 12.6510229 12.6928879  5.7333333 -1.9328194 -1.5258020  4.2364294
+##  [7] -4.9473118 -3.2275785 -0.2642777 -5.8988159</code></pre>
+<pre class="r"><code>n16   &lt;- 16
+
+
+# draw 16 days at random, build the t interval from their 16 means
+# (replace = FALSE: 16 distinct days from the 365)
+sim_day_ci &lt;- function(n, reps, dm) {
+  set.seed(6101)
+  out &lt;- replicate(reps, {
+    x &lt;- sample(dm, n)
+    c(xbar = mean(x), s = sd(x))
+  })
+  tibble(xbar = out[&quot;xbar&quot;, ], s = out[&quot;s&quot;, ])
+}
+
+day16_stats &lt;- sim_day_ci(n16, reps2, daily_means)
+
+ci16_half  &lt;- qt(0.975, n16 - 1) * day16_stats$s / sqrt(n16)
+ci16_lower &lt;- day16_stats$xbar - ci16_half
+ci16_upper &lt;- day16_stats$xbar + ci16_half
+covered_16 &lt;- ci16_lower &lt;= mu &amp; mu &lt;= ci16_upper
+
+nrow(day16_stats)</code></pre>
+<pre><code>## [1] 2000</code></pre>
+<pre class="r"><code>cov_16        &lt;- mean(covered_16)   # share of intervals that contain mu
+cov_16</code></pre>
+<pre><code>## [1] 0.93</code></pre>
+<pre class="r"><code>avg_half_16   &lt;- mean(ci16_half)    # average half-width
+avg_half_16</code></pre>
+<pre><code>## [1] 8.830241</code></pre>
+<p>The coverage from randomly sampling 16 days has substantially
+improved (0.93, closer to the desired 95% confidence) compared to
+sampling whole days (0.113).</p>
 </div>
 </div>
 <div id="part-5-an-interval-for-a-rare-rate-16-points" class="section level1">

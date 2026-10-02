@@ -282,8 +282,11 @@ ci_days_upper   <- sample_days$xbar + ci_days_half # upper CI bound
 covered_days <- ci_days_lower <= mu & mu <= ci_days_upper # is mu in interval
 
 avg_flights <- mean(sample_days$n) # average flights per interval
+avg_flights
 cov_days     <- mean(covered_days) # share of intervals that contain mu
+cov_days
 avg_width   <- mean(ci_days_upper - ci_days_lower)   # average width of intervals
+avg_width
 
 ```
 Average number of flights per interval: `r round(avg_flights, 2)`
@@ -293,24 +296,81 @@ Proportion of CIs that include mu: `r round(cov_days, 2)`
 Average width of intervals: `r round(avg_width, 2)`
 
 
-
 ## (4b) The same number of random flights
 ```{r}
+
+set.seed(6101)
+
+# one random sample from the whole population for each day-interval's sample size
+pop_stats <- sapply(sample_days$n, function(k) { # same number of flights
+  x <- sample(population, k, replace = TRUE) # sample from entire population
+  c(xbar = mean(x), s = sd(x)) # xbar and sd for each sample
+})   # 2 x 2000 matrix: row "xbar" and row "s"
+
+ci_pop_half  <- qt(0.975, sample_days$n - 1) * pop_stats["s", ] / sqrt(sample_days$n) # half width of CI
+ci_pop_lower <- pop_stats["xbar", ] - ci_pop_half
+ci_pop_upper <- pop_stats["xbar", ] + ci_pop_half
+covered_pop  <- ci_pop_lower <= mu & mu <= ci_pop_upper
+
+cov_pop       <- mean(covered_pop)                 # share of intervals that contain mu
+avg_width_pop <- mean(ci_pop_upper - ci_pop_lower)
+
+
+# compare whole day sampling to full population sampling
+compare_days <- tibble(
+  sampling     = c("One whole day", "Random flights, whole file"),
+  avg_flights  = c(mean(sample_days$n), mean(sample_days$n)),
+  coverage     = c(cov_days, cov_pop),
+  avg_width    = c(avg_width, avg_width_pop)
+)
+knitr::kable(compare_days, digits = 2)
+
+se_days <- mean(sample_days$s / sqrt(sample_days$n))  # average SE, day intervals
+se_pop  <- mean(pop_stats["s", ] / sqrt(sample_days$n))  # average SE, random samples
+
 
 ```
 
 
 ## (4c) Which step failed
-```{r}
-
-```
-
+Sampling a whole day lacks independence among flights (step 2 fails in the derivation), so the variance within a day shrinks and the standard error is too small (`r round(se_days, 2)`. The CI is too narrow and centered on a day-specific mean that is often far from mu (the interval is for the day not for mu), so it rarely captures mu (`r round(cov_days, 2)`). Widening in the intervals won't help as a result since the days interval is so far from mu to begin with. Truly independent sampling captured mu in `r round(cov_pop, 2)` of intervals, close to the nominal 95%.
 
 ## (4d) The fix, measured
 ```{r}
+# the 365 daily means (one number per calendar date)
+daily_means <- day_stats$xbar
+head(daily_means, 10)
+
+n16   <- 16
+
+
+# draw 16 days at random, build the t interval from their 16 means
+# (replace = FALSE: 16 distinct days from the 365)
+sim_day_ci <- function(n, reps, dm) {
+  set.seed(6101)
+  out <- replicate(reps, {
+    x <- sample(dm, n)
+    c(xbar = mean(x), s = sd(x))
+  })
+  tibble(xbar = out["xbar", ], s = out["s", ])
+}
+
+day16_stats <- sim_day_ci(n16, reps2, daily_means)
+
+ci16_half  <- qt(0.975, n16 - 1) * day16_stats$s / sqrt(n16)
+ci16_lower <- day16_stats$xbar - ci16_half
+ci16_upper <- day16_stats$xbar + ci16_half
+covered_16 <- ci16_lower <= mu & mu <= ci16_upper
+
+nrow(day16_stats)
+
+cov_16        <- mean(covered_16)   # share of intervals that contain mu
+cov_16
+avg_half_16   <- mean(ci16_half)    # average half-width
+avg_half_16
 
 ```
-
+The coverage from randomly sampling 16 days has substantially improved (`r cov_16`, closer to the desired 95% confidence) compared to sampling whole days (`r cov_days`).
 
 
 # Part 5 · An interval for a rare rate (16 points)
