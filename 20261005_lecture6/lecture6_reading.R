@@ -12,13 +12,14 @@
 
 
 
-# 1) State a null hypohtesis, H0
+# 1) State a null hypohtesis, H0 -----------------------------------------------
 #     A supplier claims that the mean fill weight is 500 g.
 
+# Simulate data of a sample from the population
 set.seed(8)
 n <- 40
 claim <- 500
-fill <- rnorm(n, mean = 496, sd = 9) # create data to simulate H0
+fill <- rnorm(n, mean = 496, sd = 9) # sample from population to estimate mu
 xbar <- mean(fill)
 xbar
 se <- sd(fill) / sqrt(n)
@@ -26,24 +27,24 @@ se
 
 hist(fill, breaks = 20)
 
-# 2) Choose a test statistic, T Statistic
+# 2) Choose a test statistic, T Statistic --------------------------------------
 #     We don't know sigma
 #     We will estimate sigma by calcuting SE from the sample SD
 #     We are making as assumption of normally distributed data
 
-# t = (estimate - claim) / SE
-# The difference between the sample estimate and the claim in standardize units
 
+# t statistic for sample = (estimate - claim) / SE
+# The difference between the sample estimate and the claim in standardized units of the estimate (SE)
 tstat <- (xbar - claim) / se
 tstat
 
 round(c(estimate = xbar,
         se = se,
-        t = tobs), 4)
+        t = tstat), 3)
 
 
-# 3) Work out how that statistic behaves if H0 is true
-
+# 3) Work out how that statistic behaves if H0 is true -------------------------
+# What that data look like if H0 is true
 # Assuming the mean = 500 with sample sizes n = 40
 # Simulate: mean = 500; sd = 9; n = 40
 set.seed(8)
@@ -52,12 +53,14 @@ sim_t <- replicate(10000, {
   (mean(x) - 500) / (sd(x) / sqrt(40))
 })
 
-hist(sim_t, breaks = 50, freq = FALSE)
+hist(sim_t, breaks = 50, freq = FALSE,
+     main = "Histrogram of t under H0",
+     xlab = "Standard Units")
 curve(dt(x, df = 39), col = "grey50", add = TRUE, lwd = 2)
 abline(v = mean(sim_t), col = "red", lwd = 2) # Center of simulated, T0 ~ H0
 abline(v = tstat, col = "blue", lwd = 2) # Observed t from sample, TS ~ -2.7
 legend("topright",
-       legend = c("Mean of simulated t", "Observed t"),
+       legend = c("Mean of simulated t under H0", "Observed t"),
        col    = c("red", "blue"),
        lwd    = 2,
        bty    = "n")

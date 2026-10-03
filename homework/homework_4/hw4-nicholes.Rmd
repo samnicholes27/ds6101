@@ -346,6 +346,10 @@ n16   <- 16
 
 # draw 16 days at random, build the t interval from their 16 means
 # (replace = FALSE: 16 distinct days from the 365)
+# n = sample size
+# reps = replications of simulation
+# dm = daily means
+
 sim_day_ci <- function(n, reps, dm) {
   set.seed(6101)
   out <- replicate(reps, {
@@ -376,13 +380,83 @@ The coverage from randomly sampling 16 days has substantially improved (`r cov_1
 # Part 5 · An interval for a rare rate (16 points)
 
 ## (5a) p, and np at n = 200
+```{r}
+
+# proportion of flights arrive more than 3 hours late
+p <- mean(d$arr_delay > 180)
+p
+
+n200 <- 200
+
+np200 <- n200 * p
+np200
+
+```
+
 
 ## (5b) The textbook interval
+Draw 2,000 samples of 200 flights. For each, build the textbook proportion interval, p^±1.96p^(1−p^)/np^​±1.96p^​(1−p^​)/n, and report: its coverage, the share of samples containing no such flight at all, and the share whose lower bound is negative.
+
+```{r}
+
+
+# returns the sample share of flights arriving more than 180 minutes late, one per sample
+# n = sample size
+# reps = number of replications
+# pop = population to sample from
+
+sim_props <- function(n, reps, pop) {
+  set.seed(6101)
+  replicate(reps, mean(sample(pop, n, replace = TRUE) > 180))
+}
+
+phat200 <- sim_props(n200, reps2, population)
+
+
+se_phat    <- sqrt(phat200 * (1 - phat200) / n200) # SE for proportion
+ci_p_lower <- phat200 - 1.96 * se_phat
+ci_p_upper <- phat200 + 1.96 * se_phat
+
+covered_p  <- ci_p_lower <= p & p <= ci_p_upper # is p in interval
+
+cov_p      <- mean(covered_p)           # share of intervals containing p
+cov_p
+share_none <- mean(phat200 == 0)        # share of samples with no late flight at all
+share_none
+share_neg  <- mean(ci_p_lower < 0)      # share of intervals with a negative lower bound
+share_neg
+
+
+
+
+```
+
 
 ## (5c) prop.test
+```{r}
+
+# count of late flights in each sample, recovered from the sample share
+k200 <- round(phat200 * n200)
+
+# prop.test interval for every sample
+ci_pt <- sapply(k200, function(k) prop.test(k, n200)$conf.int)
+
+ci_pt_lower <- ci_pt[1, ]
+ci_pt_upper <- ci_pt[2, ]
+
+covered_pt <- ci_pt_lower <= p & p <= ci_pt_upper
+cov_pt     <- mean(covered_pt)   # share of intervals that contain p
+cov_pt
+
+cov_ptest <- prop.test(0, 200)$conf.int
+cov_ptest
+cov_ptest[1]
+cov_ptest[2]
+
+```
 
 ## (5d) What you would report
-
+Flights that are more than 3 hours late are very rare making the proportion essentially 0, but the interval goes into negative numbers for samples with only a couple of late flights, which doesn't make any sense given the context. Overall the entirety of the interval is a single point at 0. The function prop.test() is more appropriate for events that are rare, like this one. So when reporting to a manager for the rate, I would use prop.test() to give `r cov_pt` (`r cov_ptest[1]`, `r cov_ptest[2]`)
 
 # Part 6 · The sentence, and what precision costs (12 points)
 

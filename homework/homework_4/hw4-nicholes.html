@@ -11,7 +11,7 @@
 
 <meta name="author" content="Sam Nicholes" />
 
-<meta name="date" content="2026-10-02" />
+<meta name="date" content="2026-10-03" />
 
 <title>Homework 4</title>
 
@@ -1570,7 +1570,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Homework 4</h1>
 <h3 class="subtitle">DATS 6101 · Fall 2026</h3>
 <h4 class="author">Sam Nicholes</h4>
-<h4 class="date">2026-10-02</h4>
+<h4 class="date">2026-10-03</h4>
 
 </div>
 
@@ -1945,6 +1945,10 @@ head(daily_means, 10)</code></pre>
 
 # draw 16 days at random, build the t interval from their 16 means
 # (replace = FALSE: 16 distinct days from the 365)
+# n = sample size
+# reps = replications of simulation
+# dm = daily means
+
 sim_day_ci &lt;- function(n, reps, dm) {
   set.seed(6101)
   out &lt;- replicate(reps, {
@@ -1978,15 +1982,82 @@ sampling whole days (0.113).</p>
 <h1>Part 5 · An interval for a rare rate (16 points)</h1>
 <div id="a-p-and-np-at-n-200" class="section level2">
 <h2>(5a) p, and np at n = 200</h2>
+<pre class="r"><code># proportion of flights arrive more than 3 hours late
+p &lt;- mean(d$arr_delay &gt; 180)
+p</code></pre>
+<pre><code>## [1] 0.01173987</code></pre>
+<pre class="r"><code>n200 &lt;- 200
+
+np200 &lt;- n200 * p
+np200</code></pre>
+<pre><code>## [1] 2.347974</code></pre>
 </div>
 <div id="b-the-textbook-interval" class="section level2">
 <h2>(5b) The textbook interval</h2>
+<p>Draw 2,000 samples of 200 flights. For each, build the textbook
+proportion interval,
+p<sup>±1.96p</sup>(1−p<sup>)/np</sup>​±1.96p<sup>​(1−p</sup>​)/n, and
+report: its coverage, the share of samples containing no such flight at
+all, and the share whose lower bound is negative.</p>
+<pre class="r"><code># returns the sample share of flights arriving more than 180 minutes late, one per sample
+# n = sample size
+# reps = number of replications
+# pop = population to sample from
+
+sim_props &lt;- function(n, reps, pop) {
+  set.seed(6101)
+  replicate(reps, mean(sample(pop, n, replace = TRUE) &gt; 180))
+}
+
+phat200 &lt;- sim_props(n200, reps2, population)
+
+
+se_phat    &lt;- sqrt(phat200 * (1 - phat200) / n200) # SE for proportion
+ci_p_lower &lt;- phat200 - 1.96 * se_phat
+ci_p_upper &lt;- phat200 + 1.96 * se_phat
+
+covered_p  &lt;- ci_p_lower &lt;= p &amp; p &lt;= ci_p_upper # is p in interval
+
+cov_p      &lt;- mean(covered_p)           # share of intervals containing p
+cov_p</code></pre>
+<pre><code>## [1] 0.8995</code></pre>
+<pre class="r"><code>share_none &lt;- mean(phat200 == 0)        # share of samples with no late flight at all
+share_none</code></pre>
+<pre><code>## [1] 0.096</code></pre>
+<pre class="r"><code>share_neg  &lt;- mean(ci_p_lower &lt; 0)      # share of intervals with a negative lower bound
+share_neg</code></pre>
+<pre><code>## [1] 0.6955</code></pre>
 </div>
 <div id="c-prop.test" class="section level2">
 <h2>(5c) prop.test</h2>
+<pre class="r"><code># count of late flights in each sample, recovered from the sample share
+k200 &lt;- round(phat200 * n200)
+
+# prop.test interval for every sample
+ci_pt &lt;- sapply(k200, function(k) prop.test(k, n200)$conf.int)
+
+ci_pt_lower &lt;- ci_pt[1, ]
+ci_pt_upper &lt;- ci_pt[2, ]
+
+covered_pt &lt;- ci_pt_lower &lt;= p &amp; p &lt;= ci_pt_upper
+cov_pt     &lt;- mean(covered_pt)   # share of intervals that contain p
+cov_pt</code></pre>
+<pre><code>## [1] 0.964</code></pre>
+<pre class="r"><code>cov_ptest &lt;- prop.test(0, 200)$conf.int
+cov_ptest</code></pre>
+<pre><code>## [1] 0.00000000 0.02349004
+## attr(,&quot;conf.level&quot;)
+## [1] 0.95</code></pre>
 </div>
 <div id="d-what-you-would-report" class="section level2">
 <h2>(5d) What you would report</h2>
+<p>Flights that are more than 3 hours late are very rare making the
+proportion essentially 0, but the interval goes into negative numbers
+for samples with only a couple of late flights, which doesn’t make any
+sense given the context. Overall the entirety of the interval is a
+single point at 0. The function prop.test() is more appropriate for
+events that are rare, like this one. So when reporting to a manager for
+the rate, I would use prop.test() to give 0.964 (0, 0.02349)</p>
 </div>
 </div>
 <div id="part-6-the-sentence-and-what-precision-costs-12-points" class="section level1">
