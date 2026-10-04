@@ -11,7 +11,7 @@
 
 <meta name="author" content="Sam Nicholes" />
 
-<meta name="date" content="2026-10-03" />
+<meta name="date" content="2026-10-04" />
 
 <title>Homework 4</title>
 
@@ -1570,13 +1570,12 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Homework 4</h1>
 <h3 class="subtitle">DATS 6101 · Fall 2026</h3>
 <h4 class="author">Sam Nicholes</h4>
-<h4 class="date">2026-10-03</h4>
+<h4 class="date">2026-10-04</h4>
 
 </div>
 
 
 <p><a href="https://www.smajhi.com/DATS-6101/homework/hw4.html#ai-disclosure-required" class="uri">https://www.smajhi.com/DATS-6101/homework/hw4.html#ai-disclosure-required</a></p>
-<p><a href="https://claude.ai/chat/b170d8f8-6fcf-4a6f-b8c1-06f55734c649" class="uri">https://claude.ai/chat/b170d8f8-6fcf-4a6f-b8c1-06f55734c649</a></p>
 <pre class="r"><code>library(nycflights13)
 library(tidyverse)
 data(flights)
@@ -1994,11 +1993,6 @@ np200</code></pre>
 </div>
 <div id="b-the-textbook-interval" class="section level2">
 <h2>(5b) The textbook interval</h2>
-<p>Draw 2,000 samples of 200 flights. For each, build the textbook
-proportion interval,
-p<sup>±1.96p</sup>(1−p<sup>)/np</sup>​±1.96p<sup>​(1−p</sup>​)/n, and
-report: its coverage, the share of samples containing no such flight at
-all, and the share whose lower bound is negative.</p>
 <pre class="r"><code># returns the sample share of flights arriving more than 180 minutes late, one per sample
 # n = sample size
 # reps = number of replications
@@ -2048,6 +2042,10 @@ cov_ptest</code></pre>
 <pre><code>## [1] 0.00000000 0.02349004
 ## attr(,&quot;conf.level&quot;)
 ## [1] 0.95</code></pre>
+<pre class="r"><code>cov_ptest[1]</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre class="r"><code>cov_ptest[2]</code></pre>
+<pre><code>## [1] 0.02349004</code></pre>
 </div>
 <div id="d-what-you-would-report" class="section level2">
 <h2>(5d) What you would report</h2>
@@ -2064,33 +2062,66 @@ the rate, I would use prop.test() to give 0.964 (0, 0.02349)</p>
 <h1>Part 6 · The sentence, and what precision costs (12 points)</h1>
 <div id="a-one-sample-one-interval" class="section level2">
 <h2>(6a) One sample, one interval</h2>
+<pre class="r"><code>set.seed(6101)
+one_sample &lt;- sample(population, n200, replace = TRUE)
+one_mean &lt;- mean(one_sample)
+one_sd &lt;- sd(one_sample)
+one_se &lt;- one_sd / sqrt(n200)
+one_t &lt;- qt(0.975, n200 - 1)
+one_ci &lt;- one_t * one_se
+one_ci</code></pre>
+<pre><code>## [1] 5.744946</code></pre>
+<pre class="r"><code>one_lower &lt;- one_mean - one_ci
+one_upper &lt;- one_mean + one_ci
+
+one_covered &lt;- one_lower &lt;= mu &amp; mu &lt;= one_upper
+one_covered</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code># Check against built-in functions
+# t.test(one_sample)$conf.int
+# all.equal(c(one_lower, one_upper), as.numeric(t.test(one_sample)$conf.int))</code></pre>
+<p>sample mean: 5.24</p>
+<p>sample sd: 41.2</p>
+<p>Does the one sample of 200 contain mu? 1.</p>
 </div>
 <div id="b-the-sentence-and-two-that-are-wrong" class="section level2">
 <h2>(6b) The sentence, and two that are wrong</h2>
+<p>Write the one sentence you would put in a report about that interval,
+and then write two sentences that people commonly write about intervals
+and should not, with a few words on what is wrong with each.</p>
+<p>Correct: Based on a random sample of 200 flights, we are 95%
+confident that the mean arrival delay is between r round(one_lower, 2)
+and r round(one_upper, 2) minutes.</p>
+<p>Wrong 1: There is a 95% chance that mu is in the sample interval.
+This treats mu as having a probability of being in the interval.</p>
+<p>Wrong 2: Mu may be found in a given sample interval of 200 flights
+95% of the time. This sentence also treats mu has having a probability
+of being in the interval - that mu moves instead of the sampling
+interval. And that the probability of finding mu in a single sample of
+200 changes.</p>
 </div>
 <div id="c-the-cost-of-halving-the-width" class="section level2">
 <h2>(6c) The cost of halving the width</h2>
+<pre class="r"><code>s &lt;- sd(d$arr_delay)
+
+n_1 &lt;- (1.96 * s / 1)^2
+n_05 &lt;- (1.96 * s / 0.5)^2
+n_1</code></pre>
+<pre><code>## [1] 7652.969</code></pre>
+<pre class="r"><code>n_05</code></pre>
+<pre><code>## [1] 30611.88</code></pre>
+<pre class="r"><code>n_ratio &lt;-n_05 / n_1</code></pre>
+<p>The ratio between sample sizes of halving the width of the interval
+is 4. The cost of halving the width is needing a large sample size.
+We’re requiring greater precision at the same confidence level and need
+a larger sampler to achieve this.</p>
 </div>
 </div>
 <div id="ai-disclosure" class="section level1">
 <h1>AI disclosure</h1>
-<!--
-Keep ONE of the two blocks below and delete the other.
-"I did not use an AI assistant" is always acceptable and earns full marks.
--->
 <div id="prompt-log" class="section level2">
 <h2>Prompt log</h2>
-</div>
-<div id="critique" class="section level2">
-<h2>Critique</h2>
-<p><em>150-300 words. Either name something the assistant got wrong and
-what it would have cost, or show the prompts you used trying to break it
-when it held up. Both earn full marks.</em></p>
-<!-- OR, replacing both sections above:
-
-I did not use an AI assistant on this assignment.
-
--->
+<p><a href="https://claude.ai/share/b9d2af9d-d7b6-40d3-ae8f-d0a0c8643c1b" class="uri">https://claude.ai/share/b9d2af9d-d7b6-40d3-ae8f-d0a0c8643c1b</a></p>
 </div>
 </div>
 

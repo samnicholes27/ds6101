@@ -10,10 +10,7 @@ output:
     code_folding: show
 ---
 
-
 https://www.smajhi.com/DATS-6101/homework/hw4.html#ai-disclosure-required
-
-https://claude.ai/chat/b170d8f8-6fcf-4a6f-b8c1-06f55734c649
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
@@ -395,7 +392,6 @@ np200
 
 
 ## (5b) The textbook interval
-Draw 2,000 samples of 200 flights. For each, build the textbook proportion interval, p^±1.96p^(1−p^)/np^​±1.96p^​(1−p^​)/n, and report: its coverage, the share of samples containing no such flight at all, and the share whose lower bound is negative.
 
 ```{r}
 
@@ -461,28 +457,68 @@ Flights that are more than 3 hours late are very rare making the proportion esse
 # Part 6 · The sentence, and what precision costs (12 points)
 
 ## (6a) One sample, one interval
+```{r}
+set.seed(6101)
+one_sample <- sample(population, n200, replace = TRUE)
+one_mean <- mean(one_sample)
+one_sd <- sd(one_sample)
+one_se <- one_sd / sqrt(n200)
+one_t <- qt(0.975, n200 - 1)
+one_ci <- one_t * one_se
+one_ci
+one_lower <- one_mean - one_ci
+one_upper <- one_mean + one_ci
+
+one_covered <- one_lower <= mu & mu <= one_upper
+one_covered
+
+# Check against built-in functions
+# t.test(one_sample)$conf.int
+# all.equal(c(one_lower, one_upper), as.numeric(t.test(one_sample)$conf.int))
+
+```
+
+sample mean: `r round(one_mean, 2)`
+
+sample sd: `r round(one_sd, 2)`
+
+Does the one sample of 200 contain mu? `r round(one_covered, 2)`.
+
+
 
 ## (6b) The sentence, and two that are wrong
+Write the one sentence you would put in a report about that interval, and then write two sentences that people commonly write about intervals and should not, with a few words on what is wrong with each.
+
+Correct: Based on a random sample of 200 flights, we are 95% confident that the mean arrival delay is between r round(one_lower, 2) and r round(one_upper, 2) minutes.
+
+Wrong 1: There is a 95% chance that mu is in the sample interval.
+This treats mu as having a probability of being in the interval.
+
+Wrong 2: Mu may be found in a given sample interval of 200 flights 95% of the time.
+This sentence also treats mu has having a probability of being in the interval - that mu moves instead of the sampling interval. And that the probability of finding mu in a single sample of 200 changes.
+
 
 ## (6c) The cost of halving the width
 
-# AI disclosure
+```{r}
+s <- sd(d$arr_delay)
 
-<!--
-Keep ONE of the two blocks below and delete the other.
-"I did not use an AI assistant" is always acceptable and earns full marks.
--->
+n_1 <- (1.96 * s / 1)^2
+n_05 <- (1.96 * s / 0.5)^2
+n_1
+n_05
+
+n_ratio <-n_05 / n_1
+
+```
+The ratio between sample sizes of halving the width of the interval is `r n_ratio`. The cost of halving the width is needing a large sample size. We're requiring greater precision at the same confidence level and need a larger sampler to achieve this.
+
+
+# AI disclosure
 
 ## Prompt log
 
-## Critique
+https://claude.ai/share/b9d2af9d-d7b6-40d3-ae8f-d0a0c8643c1b
 
-*150-300 words. Either name something the assistant got wrong and what it would
-have cost, or show the prompts you used trying to break it when it held up.
-Both earn full marks.*
 
-<!-- OR, replacing both sections above:
 
-I did not use an AI assistant on this assignment.
-
--->
