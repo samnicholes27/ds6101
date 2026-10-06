@@ -12,7 +12,7 @@
 
 
 
-# 1) State a null hypohtesis, H0 -----------------------------------------------
+# 1) State a null hypothesis, H0 -----------------------------------------------
 #     A supplier claims that the mean fill weight is 500 g.
 
 # Simulate data of a sample from the population
@@ -47,9 +47,10 @@ round(c(estimate = xbar,
 # What that data look like if H0 is true
 # Assuming the mean = 500 with sample sizes n = 40
 # Simulate: mean = 500; sd = 9; n = 40
+# Where sample (observed) T value values on the H0 distribution
 set.seed(8)
 sim_t <- replicate(10000, {
-  x <- rnorm(40, mean = 500, sd = 9) # one sample of 40 drawn from a population where H0 is true (mu = 500)
+  x <- rnorm(n, mean = 500, sd = 9) # one sample of 40 drawn from a population where H0 is true (mu = 500)
   (mean(x) - 500) / (sd(x) / sqrt(40))
 })
 
@@ -65,6 +66,40 @@ legend("topright",
        lwd    = 2,
        bty    = "n")
 
+
+# 4) As extreme as -------------------------------------------------------------
+# Assuming H0 is true how often would you get results at least as extreme as the sample? 
+
+# -abs(tstat) gives us the area to the left of tstat (the lower tail)
+# 2 * pt(...) gives us a two-sided test "as extreme as... in either direction
+
+p <- 2 * pt(-abs(tstat), df = n - 1)
+round(c(t = tstat, 
+        p_value = p), 5)
+
+
+# Fraction landing at or below −2.70: about 0.0051 (about half a percent)
+# Fraction landing at or above +2.70: also about 0.0051, by symmetry
+# Two-Sided (total area) = 0.01018
+
+# So p = 0.01018 means: if the true mean were 500 g, about 1 in 100 repeated samples 
+# of 40 units would produce a t statistic at least 2.7 standard errors from zero in either direction.
+
+
+# Using the t.test() function to confirm findings
+t.test(fill, mu = 500)
+
+
+# CONDIIONAL PROBABILITY OF THE P-VALUE ----------------------------------------
+################################################################################
+# p value = P(data at least this extreme∣ H0 true)
+# The probability that the data are at least this extreme assuming the null hypothesis is true
+################################################################################
+
+
+# REJECTING H0 -----------------------------------------------------------------
+# Rejecting true H0: Type 1 Error, rate alpha
+# Accepting false H0: Type 2 Error, rate beta
 
 
 
