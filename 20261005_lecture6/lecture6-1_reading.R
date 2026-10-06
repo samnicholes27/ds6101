@@ -99,7 +99,12 @@ t.test(fill, mu = 500)
 
 # REJECTING H0 -----------------------------------------------------------------
 # Rejecting true H0: Type 1 Error, rate alpha
+# alpha is chosen
+
+
 # Accepting false H0: Type 2 Error, rate beta
+# beta is a product of the experiment/study design
+
 
 
 
