@@ -1,0 +1,27 @@
+
+
+MISREADING 5) “The result replicated, because both studies had p<0.05.”
+
+Context: two studies came to the same conclusion based on shared significance of findings.
+
+Why it's wrong:
+
+Two studies can both get p < 0.05 for completely different reasons.
+    Study A: n = 40, estimated difference of 12 points, 95% CI from 2 to 22.
+    Study B: n = 4,000, estimated difference of 1 point, 95% CI from 0.3 to 1.7.
+
+Both have p < 0.05, so by the "both significant" standard they replicated. But Study A says the effect could be anywhere from tiny to enormous, with a best guess of 12, while Study B says it is small, about 1. Their estimates differ by a factor of 12, and their intervals barely overlap. Calling that replication throws away almost everything the studies said.
+
+The reverse also happens:
+  Study C: estimate 8, 95% CI from −0.5 to 16.5, p = 0.065.
+  Study D: estimate 9, 95% CI from 1 to 17, p = 0.03.
+
+Under the threshold logic, C "failed" and D "succeeded," so they disagree. But the estimates (8 vs 9) and intervals are nearly identical. The only difference is that D's interval barely clears zero and C's barely doesn't. This is the same point as 0.049 versus 0.051: the line has no special meaning, so which side you land on is a poor basis for judging agreement.
+
+
+What to do instead: compare the intervals
+
+  Ask three questions of the two results:
+    1) Are the estimates close? Do the point estimates, in meaningful units, say about the same thing?
+    2) Do the intervals overlap substantially? Heavy overlap means the studies are compatible with a common true effect.
+    3) Is the precision similar? If one interval is far wider, that study is saying less, and its agreement is cheaper.

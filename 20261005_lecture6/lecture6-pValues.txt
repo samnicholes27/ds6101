@@ -1,7 +1,6 @@
 PROMPT: I guess I'm getting confused with the probability of getting a p value with having the p values ranked in order?
 
 
-
 RESPONSE FROM CLAUDE:
 These are two different things, and my ranking explanation blurred them. Let me separate them.
 

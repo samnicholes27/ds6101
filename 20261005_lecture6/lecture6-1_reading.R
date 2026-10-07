@@ -85,6 +85,10 @@ round(c(t = tstat,
 # So p = 0.01018 means: if the true mean were 500 g, about 1 in 100 repeated samples 
 # of 40 units would produce a t statistic at least 2.7 standard errors from zero in either direction.
 
+# p is the fraction of null-world experiments that look at least as extreme as yours. 
+# Ask what fraction of studies have a p-value under 0.05, 
+# and you are asking what fraction land in the most extreme 5% of the null world.
+
 
 # Using the t.test() function to confirm findings
 t.test(fill, mu = 500)
