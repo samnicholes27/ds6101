@@ -153,6 +153,53 @@ hist(p_alt,  breaks = 40,                  main = "H0 false: p", xlab = "p")
 # How big is the difference (null is false)?
 
 
+set.seed(6101)
+control   <- rnorm(60, mean = 72, sd = 11)
+treatment <- rnorm(60, mean = 77, sd = 11)
+
+tt <- t.test(treatment, control)
+tt$statistic # difference in standard errors
+mean(control) - mean(treatment) # difference in means
+
+# CI is for the difference in means
+tt$conf.int[1]
+tt$conf.int[2]
+
+tt$p.value
+
+# Cohen's d - the difference in standard deviations 
+d  <- (mean(treatment) - mean(control)) / sqrt((var(treatment) + var(control)) / 2)  # standardize the difference in means   
+d
+
+round(c(difference = (mean(control) - mean(treatment)),
+        ci_low = tt$conf.int[1], 
+        ci_high = tt$conf.int[2],
+        p = tt$p.value, 
+        cohens_d = d), 4)
+
+# Report the difference and its interval first. 
+# Cohen’s dd—the difference in standard deviations—is useful when the units are not meaningful to the reader
+
+# Rule of thumb not law (depends on context):
+# 0.2 = small
+# 0.5 = medium
+# 0.8 = large
+
+# example: a d of 0.1 on a mortality outcome is enormous
+
+
+# Cohen's D vs Two-Sample T ----------------------------------------------------
+
+# Two-Sample T
+# Divides the difference by SE
+# Grows with sqrt(n)
+# Answer the question: How precisely is it measured relative to zero?
+
+
+# Cohen's D
+# Divides the difference by SD
+# Does not change with n
+# Answers the question: How big is the effect?
 
 
 

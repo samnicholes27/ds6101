@@ -1,0 +1,126 @@
+---
+title: "lecture6_WinnersCurse"
+author: "Sam Nicholes"
+date: "2026-10-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+# The Winner's Curse
+The winner’s curse happens when a real effect is studied with too little data to detect it reliably. Because the study is underpowered, most samples miss the effect, and the few that reach significance do so only by happening to land on an unusually large estimate. The estimator itself is not biased, since averaged over all studies it is right on target, but the significance filter keeps only the lucky overestimates. Since the published literature is mostly the significant results, it ends up reporting an exaggerated version of a real effect. A replication team then plans its study around that inflated size and, without realizing it, is underpowered for the true, smaller effect, so it usually comes back non-significant. That failure is easy to misread as proof the original was wrong, when it is really inconclusive: the effect exists, and both studies were simply too small to measure it well. Comparing the estimates and intervals from the two studies, rather than asking whether each crossed p < 0.05, shows they are compatible with the same underlying effect, and it is the reason power and effect size need to be considered alongside the p-value.
+
+
+
+## Underpowered Study (due to sample size)
+The simulation asserts a real but modest effect (true mean 0.3, SD 1) and runs 20,000 studies of only 20 people each, testing every sample against a null of 0, so H0 is false in every study and each p < 0.05 is a correct rejection. Because n is small, the center of the t distribution (about 1.34) sits well below the cutoff (about 2.09), so only about a quarter of studies reach significance, and the code records each study’s estimate alongside its p-value. Comparing the average estimate across all studies (unbiased, 0.30) with the average among only the significant ones (inflated, 0.57) isolates what goes wrong: the underpowered design lets the significance filter pass only the lucky overestimates.
+
+```{r}
+set.seed(3)
+res <- replicate(20000, {
+  x  <- rnorm(20, mean = 0.3, sd = 1)
+  tt <- t.test(x, mu = 0)
+  c(p = tt$p.value, estimate = mean(x))
+})
+
+sig <- res["p", ] < 0.05
+
+round(c(true_effect          = 0.3,
+        power                = mean(sig),
+        mean_estimate_all    = mean(res["estimate", ]),
+        mean_estimate_if_sig = mean(res["estimate", sig])), 3)
+```
+
+
+
+The true effect is 0.30, but with only 24.7% power, about three quarters of studies miss it. Averaged over all studies, the estimate is unbiased (0.300), yet the studies that reached significance average 0.568, nearly double the truth. The significance filter keeps only the lucky overestimates, so the “winning” studies systematically exaggerate a real effect.
+
+
+```{r}
+est <- res["estimate", ]
+hist(est, breaks = 60, col = "gray80", border = "white",
+     main = "Estimates: all studies vs significant ones", xlab = "Estimated effect") # distribution of all samples
+hist(est[sig], breaks = 60, col = rgb(1, 0, 0, 0.5), border = "white", add = TRUE) # distribution of samples with p < 0.05
+abline(v = 0.3, lty = 2, lwd = 2, col = "grey5") # mean of all samples
+abline(v = mean(res["estimate", sig]), lty = 2, lwd = 2, col = 'darkred') # mean of samples with p < 0.05
+
+```
+The gray histogram shows the estimates from all 20,000 studies, centered on the true effect of 0.30, so the estimator is unbiased overall. The red histogram is the subset that reached p < 0.05, and it is carved entirely from the right tail of the gray one, because only studies that happened to draw a large estimate (roughly 0.47 or higher) clear the cutoff. The two dashed lines make the consequence visible: the dark line at 0.30 marks the truth, while the dark red line at about 0.57 marks the average of the “winning” studies, so anyone who sees only the significant results sees a systematically exaggerated effect.
+
+
+
+```{r}
+
+set.seed(3)
+t_vals <- replicate(20000, t.test(rnorm(20, mean = 0.3, sd = 1), mu = 0)$statistic)
+
+crit <- qt(0.975, df = 19)     # 2.093
+ncp  <- 0.3 * sqrt(20)         # 1.342, center of the t cloud
+mean(abs(t_vals) > crit)       # simulated power, ~0.247
+
+
+sig <- abs(t_vals) > crit
+hist(t_vals, breaks = 60, col = "gray85", border = "white", xlim = c(-4, 8),
+     xlab = "t statistic", main = "Which studies 'win'?") # all samples
+hist(t_vals[sig], breaks = 60, col = rgb(1, 0, 0, 0.5), border = "white", add = TRUE) # significant samples
+abline(v = c(-crit, crit), lty = 2) # critical values to reject null
+```
+The gray histogram shows the t statistics from all 20,000 studies, a cloud centered around 1.34 (well below the cutoff) because the true effect is real but small relative to the noise at n = 20. The red histogram is the subset past the dashed critical values (about ±2.09), and it is carved almost entirely from the right tail, since only studies that drew an unusually high t, which means an unusually high sample mean, “win.” Most of the gray cloud sits between the dashed lines, so most studies miss a real effect, and the few that cross the line do so by luck, which is exactly the selection that produces the inflated estimates in the previous graph.
+
+
+
+```{r}
+
+# T Distributions of Winner's Curse Simulation ---------------------------------
+# Histogram of the null value
+# Critical values based on null
+
+# Histogram of sampling and its center
+# Significant samples (above cut off) highlighted 
+
+
+# Histogram of the simulated t values
+hist(t_vals, breaks = 60, freq = FALSE, col = "gray85", border = "white",
+     xlim = c(-4, 8), xlab = "t statistic",
+     main = "t values when the true d = 0.3 and n = 20")
+
+# Exact noncentral t curve (the cloud the histogram is estimating)
+x <- seq(-4, 8, length.out = 1000)
+lines(x, dt(x, df = 19, ncp = ncp), lwd = 2)
+
+# Null t curve for reference (where the cutoffs come from)
+lines(x, dt(x, df = 19), lwd = 2, lty = 3, col = "blue")
+
+# Cutoffs
+abline(v = c(-crit, crit), lty = 2, col = "red", lwd = 2)
+
+# Center of the cloud
+abline(v = ncp, lty = 1, col = "darkgreen", lwd = 2)
+
+# Shade the part of the noncentral curve beyond the upper cutoff (the "wins")
+xr <- x[x >= crit]
+polygon(c(crit, xr, max(xr)), c(0, dt(xr, 19, ncp = ncp), 0),
+        col = rgb(1, 0, 0, 0.4), border = NA)
+
+legend("topright", bty = "n", lwd = 2, lty = c(1, 3, 2, 1),
+       col = c("black", "blue", "red", "darkgreen"),
+       legend = c("True t cloud (noncentral)", "Null t (H0 true)",
+                  "Cutoffs ±2.09", "Center, δ = 1.34"))
+```
+
+This graph puts two worlds on one set of axes: the world where H0 is true (the dotted blue curve, centered at 0) and the world where the effect is real (the gray histogram and the solid black curve, centered at δ ≈ 1.34). The red dashed lines at about ±2.09 are the cutoffs, and they come from the blue null curve, since they mark where only 5% of null-world studies would land. They do not move, even though the studies being judged come from the shifted distribution. The gray histogram is the cloud of t values from 20,000 simulated studies with a true effect of 0.3 and n = 20, and the black curve is the exact noncentral t distribution it is estimating, so the two should trace the same shape. The green line marks the center of that cloud, and it sits well to the left of the right-hand cutoff, which is the visual form of low power: most of the cloud falls between the dashed lines, so most studies print p ≥ 0.05 even though the effect is real. The shaded red region is the part of the cloud past the upper cutoff, the “winners,” and its area (about 0.247) is the power. Because that region lies far out in the right tail, relative to where the cloud is centered, any study that lands in it did so by drawing an unusually high t, which means an unusually high sample mean. That is the winner’s curse in picture form: the significance filter selects only the lucky right-tail studies, so the estimates attached to significant results are systematically inflated relative to the true effect, even though the test itself is working exactly as designed.
+
+
+## Take-Away
+Why an underpowered design produces “lucky” significant results
+
+Any study run with this design is underpowered. With a true effect of 0.3 and only 20 observations, the center of the t distribution (δ = d × √n ≈ 1.34) sits below the critical value (about 2.09), so only about 25% of studies reach p < 0.05. To get there, a study must draw a sample mean well above the truth (roughly 0.47 or more, versus the true 0.3), so a significant result from this design is, by construction, a lucky draw.
+
+The luck is not a flaw in any one team’s conduct. It is what the significance filter selects for. Of 100 teams running this design, about 75 find nothing and are rarely heard from, while the roughly 25 who reach significance publish estimates that average about 0.57, nearly double the truth. Any team that published from this design would have reported an inflated number, and every downstream researcher, including a replication team planning its sample size around that number, inherits the exaggeration.
+
+The problem is therefore the design rather than any single study: low power means the only visible, significant results are exaggerated ones, even though the estimator is unbiased across all studies (mean 0.30).

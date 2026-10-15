@@ -1,0 +1,104 @@
+---
+title: "Multiple Comparisons Problem"
+author: "Sam Nicholes"
+date: "2026-10-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Review: alpha, beta, confidence, power
+### Q) What does 95% (confidence) mean? 
+R) 95% is the probability of correctly not rejecting a true null.
+E) Confidence = P(fail to reject H0 | H0 is true)
+E) confidence = 1 - alpha
+
+### Q) What does 5% mean?
+R) 5% is the probability of incorrectly rejecting a true null. Type 1 Error.
+R) alpha is a choice that is made.
+E) alpha = P(reject H0 | H0 is true)
+
+### Q) What is power?
+R) Power is the probability of correctly rejecting a false null.
+R) Power is an attribute of the study design.
+E) power = P(reject H0 | H0 is false)
+E) power = 1 - beta
+
+### Q) What is beta?
+R) Beta is the probability of incorrectly not rejecting a false null. Type 2 Error.
+E) beta = P(Fail to reject H0 | H0 is false)
+
+
+## Alpha and the problem of Multiple Comparisons
+Alpha is a probability that 1 in 20 tests will be a false alarm (incorrectly rejecting the null). This only applies to a single test.
+With repeated testing, the probability that at least 1 in 20 tests will be a false alarm increases by: 1 - 95^i, where i is the number of repeats. This assumes every null is true and the tests are independent.
+
+
+```{r}
+i <- c(1, 2, 5, 10, 20, 50, 100) # number of test done
+round(data.frame(tests = i, P_at_least_one_false_positive = 1 - 0.95^i), 3)
+```
+
+```{r}
+
+set.seed(6101)
+
+# 20 comparisons, all null: two groups drawn from the same population.
+# Drawn from the same population means the the difference between them is 0
+# I.E. the null is true
+
+pvals <- replicate(20, { # 20 independent tests
+  a <- rnorm(50) # Group A 
+  b <- rnorm(50) # Group B
+  t.test(a, b)$p.value # P values for a two sample t test
+})
+
+round(sort(pvals), 4) # sort p values smallest to largest
+
+cat("significant at 0.05:", sum(pvals < 0.05), "\n") # how many p values are less than 0.05
+```
+
+
+
+## Solution to the problem of Multiple Comparisons
+
+
+### Bonferroni
+Divide 0.05 by the number of repeated tests. This is the new alpha. Bonferroni protects against a single test with a type 1 error.
+"How do I avoid any type 1 errors?"
+
+### Benjamini-Hochberg
+Keeps the rate of type 1 errors at a determined rate, similar to deciding 5% for a single test. A few type 1 errors are still acceptable.
+
+```{r}
+set.seed(11)
+# 100 tests. The first 10 have a real effect; the other 90 are null.
+p <- c(replicate(10, t.test(rnorm(50, mean = 0.5))$p.value),
+       replicate(90, t.test(rnorm(50, mean = 0))$p.value))
+truth <- c(rep(TRUE, 10), rep(FALSE, 90))
+
+report <- function(keep, label) {
+  c(method = label, discoveries = sum(keep),
+    true_ones = sum(keep & truth), false_ones = sum(keep & !truth))
+}
+
+rbind(
+  report(p < 0.05,                        "raw p < 0.05"),
+  report(p.adjust(p, "bonferroni") < 0.05, "Bonferroni"),
+  report(p.adjust(p, "BH") < 0.05,         "Benjamini-Hochberg")
+)
+```
+
+
+| Method |	Discoveries | True | False |
+|:---|:---:|:---:|:---:|
+| raw p<0.05 | 12 | 9 | 3 |
+| Bonferroni | 5 | 5 | 0 |
+| Benjamini–Hochberg | 8 | 8 | 0 |
+
+
+
+
