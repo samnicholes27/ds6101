@@ -1,0 +1,63 @@
+---
+title: "What Randomization Buys"
+author: "Sam Nicholes"
+date: "2026-10-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Randomization
+
+- Every causal claim is a comparison between different people (treatment and control).
+- Sampling/selection for comparison groups affects how the differences show up.
+
+### Difference between self-selected groups
+```{r}
+set.seed(6101)
+n    <- 2000
+conf <- rnorm(n) # Quick and dirty simulation of an occurance in a give population
+
+
+picked <- ifelse(conf > 0.2, "A", "B") # Self-selection: keener people opt in.
+round(mean(conf[picked == "A"]) - mean(conf[picked == "B"]), 3) # compare means between self-selected groups
+```
+
+
+### Difference between randomly selected groups
+```{r}
+
+set.seed(6101)
+n    <- 2000
+conf <- rnorm(n)
+
+imbalance <- replicate(2000, {
+  g <- sample(c("A", "B"), n, replace = TRUE)
+  mean(conf[g == "A"]) - mean(conf[g == "B"])
+})
+
+hist(imbalance)
+hist(imbalance/sd(imbalance))
+
+round(c(mean_imbalance = mean(imbalance),
+        sd_imbalance   = sd(imbalance),
+        within_95pct   = quantile(abs(imbalance), 0.95)), 4) # 95% of differences in the replication will differ no more than by <x>
+
+```
+
+
+### Takeaway
+- The difference between self selected groups is larger than randomly selected groups.
+- Randomization decreases lopsidedness (minimizes differences between groups)
+
+### What Randomization doesn't do
+- Does not fix a bad outcome measure
+- Does not allow generalization/external validity
+- Does not prevent interference (one person's assignment does not affect - interference with - another's outcome).
+
+
+

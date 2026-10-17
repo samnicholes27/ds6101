@@ -1,0 +1,83 @@
+---
+title: "Designing an A/B Test"
+author: "Sam Nicholes"
+date: "2026-10-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+# What is an A/B Test
+A randomized experiment - treatment, control.
+
+
+# A Priori Decisions
+
+## Primary metric
+Deciding on a single metric for a single outcome, e.g. time to event; conversion rate; counts per minute.
+
+Deciding on a single primary metric and outcome prevents crossing the false positive threshold at alpha = 0.05.
+
+The primary metric allows you to see change, gather information or evidence of a change or difference.
+
+## Guardrails
+Guardrail metrics help us detect/prevent harm while in the process of gathering evidence of change for the primary metric.
+
+Examples: serious adverse events, participant safety/privacy, drop in blood sugar levels.
+
+## Minimum effect
+The floor effect size that allows you to make a decision, change a policy, take action...
+Minimum Detectable Effect (MDE)
+Smallest Effect Size of Interest (SESOI)
+Minimum Clinically Important Difference (MCID)
+
+## Sample size 
+
+So far we decide: 
+
+- Smallest effect worth acting on	Business or clinical decision (step 3)
+- α	convention or risk tolerance for false positives (alpha)
+- Power	Risk tolerance for false negatives (beta)
+
+We solve for sample size (n) from the first three.
+
+### Example - Difference in Proportions, conversion rate
+
+Research question: If the true conversion rate is p1 in control and p2 in treatment, how many users per group do I need so that a two-sided test at significance level, alpha, will detect that difference with probability equal to the power?
+
+```{r}
+# Baseline conversion 5%. How many per group to detect various improvements?
+# p1 is the 5% baseline conversion rate taken from previous research
+# p2 is various conversion rates that we want a sample size for
+# power is set at 0.8
+# alpha is set at 0.05
+
+for (p2 in c(0.055, 0.06, 0.07)) {
+  n <- ceiling(power.prop.test(p1 = 0.05, p2 = p2, power = 0.8, sig.level = 0.05)$n)
+  cat("5.0% ->", format(100 * p2, nsmall = 1), "% :", format(n, big.mark = ","),
+      "per group\n")
+}
+```
+A conversion rate from 5% to 6%, conversion rate of 1 percentage point increase, requires 8,158 users in each group.
+- n per group = 8,158
+- total n = 16316
+
+
+# Stopping rule
+The stopping rule is part of the study design. In this case, we're doing A/B testing, treatment/control. The stopping point is once we've reached our desired sample size; we run the analysis once and draw a conclusion based on the results.
+
+The stopping rule will differ based on the study design.
+
+# Analysis 
+
+
+
+
+
+
+
