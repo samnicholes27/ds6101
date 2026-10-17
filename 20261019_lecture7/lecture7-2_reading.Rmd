@@ -68,16 +68,35 @@ A conversion rate from 5% to 6%, conversion rate of 1 percentage point increase,
 - total n = 16316
 
 
-# Stopping rule
+## Stopping rule
 The stopping rule is part of the study design. In this case, we're doing A/B testing, treatment/control. The stopping point is once we've reached our desired sample size; we run the analysis once and draw a conclusion based on the results.
 
 The stopping rule will differ based on the study design.
 
-# Analysis 
+## Analysis 
+The analysis is decided on and committed to before data collection/recruitment. The analysis is done once and conclusions are made based on the results.
+
+
+```{r}
+# 24,000 users per arm. Control converts 4.67%, treatment 5.04%.
+res <- prop.test(x = c(1210, 1120), n = c(24000, 24000), correct = FALSE)
+
+round(c(treatment = 1210 / 24000, control = 1120 / 24000,
+        difference = (1210 - 1120) / 24000,
+        p_value = res$p.value,
+        ci_low = res$conf.int[1], ci_high = res$conf.int[2]), 5)
+
+```
 
 
 
 
-
+| Quantity | Value | Meaning |
+|:---|:---|:---|
+| Treatment rate | 5.04% | 1,210 / 24,000 |
+| Control rate | 4.67% | 1,120 / 24,000 |
+| Difference | +0.375 points | Observed lift |
+| p-value	| 0.056	| If the true difference were zero, a gap this large or larger would appear about 5.6% of the time |
+| 95% CI |	−0.009 to +0.76 points |	Range of true differences consistent with the data |
 
 
