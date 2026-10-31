@@ -33,16 +33,19 @@ The model describes a line and has an intercept (beta_0) and slope (beta_i). *Wh
 
 ## Least Squares
 
-A model draws a line through the data. The line should be the one that minimizes the sum of squared vertical distances between itself and the data points. *Squaring makes the line sensitive to outliers* - a point twice as far as other points will contribute four times as much to the line.
+A model draws a line through the data. The line should be the one that minimizes the sum of squared vertical distances between itself and the data points. The grey, vertical lines in the graph are the residuals (y - y_hat). *Squaring the residuals makes the regression line sensitive to outliers* - a point twice as far as other points will contribute four times as much to the line.
+
 
 ```{r}
 set.seed(6101)
 n <- 80
 d <- data.frame(x = runif(n, 0, 10)) # create x values
 d$y <- 3 + 2 * d$x + rnorm(n, 0, 2.5) # create y values as a linear output of x
-# intercept = 3
-# slope = 2
-# random error: rnorm(n, 0, 2.5)
+# Population parameters:
+# true intercept = 3
+# true slope = 2
+
+# random error: rnorm(n, 0, 2.5) <- contributes error to the simulated model
 
 fit <- lm(y ~ x, data = d)
 
@@ -53,23 +56,84 @@ segments(d$x, d$y, d$x, fitted(fit), col = "gray65")
 ```
 
 ## Regression Output
+```{r}
+set.seed(6101)
+d <- data.frame(x = runif(80, 0, 10))
+d$y <- 3 + 2 * d$x + rnorm(80, 0, 2.5)
+# true intercept of 3
+# true slope of 2 for x
+
+mod1 <- lm(y ~ x, data = d)
+summary(mod1)
+
+```
+
+### Estimated Coefficients and Std. Errors
+There is a discrepancy between the estimates and the parameters, as presented in the simulation. This is due to ordinay sampling variation and not a mistake. `Population intercept = 3` and `population slope = 2`.
+
+- **Intercept**: `r round(coef(mod1)["(Intercept)"], 2)`. When x = 0 then y = `r round(coef(mod1)["(Intercept)"], 2)`
+
+- **X**: `r round(coef(mod1)["x"], 2)`. When X increases by 1 unit, then y increases by `r round(coef(mod1)["x"], 2)`
+
+- **Std. Errors**: How much the estimate would move if the data were collected again. Small std. errors mean more precise, stable estimates; they are the most useful pieces of information in the output.
+
+- **Residual standard error** - the average size of a residual, an estimate of sigma in units of y.
+
+### Test Statistics, P-Values, and Null Hypotheses
+
+- **T-statistic**: Is a given coefficient distinguishable from 0? t = (coefficient estimate - claim) / SE, where the claim is 0. The t statistic shows how far away a given estimate is from the null value, the claim - a two-sided t-test. H0: beta_i = 0.
+
+- **Pr(>|t|)**: The p-value is the probability for the t-value. How often or how likely would a sample product a t-value at least this far away from zero in either direction (assuming that the null was true)?
+
+- **R-squared**: The share of variance (%) that is explained by the model. 
+
+- **F-statistic**: Tests all slopes at once, with the null being H0: beta_1 = beta_2 = ... = beta_i = 0; and therefore y = beta_0. "Are all slopes equal to 0" (the average y doesn't change with a change in the average x)?
+
+- **P-value for F-stat**: The p-value for the f-value. How often or how likely would a sample product a f-value at least this far away from zero (assuming that the null was true)?
+
+
+
+## Fitted Values and Residuals
+
+- Y-values are the observed values.
+
+- Fitted values are what model predicts for y-values based on the regression line.
+
+- Residuals are the differences between teh observe and fitted values.
+
 
 ```{r}
 set.seed(6101)
 d <- data.frame(x = runif(80, 0, 10))
 d$y <- 3 + 2 * d$x + rnorm(80, 0, 2.5)
+fit <- lm(y ~ x, data = d)
 
-summary(lm(y ~ x, data = d))
+round(head(data.frame(x = d$x, y = d$y,
+                      fitted = fitted(fit), residual = resid(fit)), 5), 3)
 
+# Two facts that hold for every least-squares fit with an intercept.
+round(c(mean_residual = mean(resid(fit)),
+        cor_resid_x   = cor(resid(fit), d$x)), 10)
 ```
 
 
 
+## Prediction
+Prediction is using the model on a new set x values to predict what the y values would be. 
 
+- **Interpolation**: predicting the outcome based on x-values found within the observed range of x values.
 
+- **Extrapolation**: predicting the outcome based on x-values outside of the range of observed x values.
 
+```{r}
+set.seed(6101)
+d <- data.frame(x = runif(80, 0, 10))
+d$y <- 3 + 2 * d$x + rnorm(80, 0, 2.5)
+fit <- lm(y ~ x, data = d)
 
-
+predict(fit, newdata = data.frame(x = c(2, 5, 8))) # interpolation
+# output is predicted y values
+```
 
 
 
