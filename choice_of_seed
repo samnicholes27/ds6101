@@ -1,0 +1,8 @@
+Q) My question isn't about this week's materials, but are there guidelines or a rule-of-thumb for picking a seed? It seems like a seed could allow p-hacking, given the opportunity.
+
+
+A) Not off-topic at all, and you have identified the real hazard.
+
+The rule is that the seed is fixed before you look at any result and never varied to improve one. Running a simulation with seed after seed until the p-value drops below 0.05 is p-hacking in the purest form—it is the twenty-tests problem with the tests hidden inside your own workflow. Pick a value, write it at the top of the script, leave it.
+
+There is no good seed and no bad seed, which is why there is no rule of thumb for choosing one. But there is a useful diagnostic hiding in your question: if your conclusion changes when the seed changes, the seed is not the problem—the simulation is too small. Increase the number of replicates until the answer is stable to the precision you intend to report. That is the real guideline. The seed buys reproducibility; the replicate count buys an answer you can trust.

@@ -1,0 +1,87 @@
+---
+title: "Fitting a Line"
+author: "Sam Nicholes"
+date: "2026-10-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Linear Models
+
+**Model - yi = β0 + βixi + εi**
+
+For a model to be linear, the inputs and outputs must scale proportionally. e.g. inputs scale by a factor of 2, and outputs scale by a factor of 2.
+The model describes a line and has an intercept (beta_0) and slope (beta_i). *When x = 0 then y = beta_o*.
+
+**Predictors** - xi... the input(s) to a model (indendendent variable(s))
+
+**Outcome** - yi... the output of a model (dependent variable)
+
+**Coefficient** -  A number is a regression model that tells you how much an outcome changes when a one predictor changes by one unit (holding all other predictors constant). Model coefficients estimate population coefficients (an estimate and a parameter). Since it is an estimate, a coefficient has a sampling distribution and a standard error (different samples will result in different estimates and standard errors).
+
+**Parameters** - β0, βi... properties of the population that are unknown and fixed.
+
+**Estimates** - β^0,β^i (beta_hat)... estimates of the parameters. Computed from a sample with a standard error.
+
+**Error** - εi... what is left unexplained by the model in yi
+
+
+
+## Least Squares
+
+A model draws a line through the data. The line should be the one that minimizes the sum of squared vertical distances between itself and the data points. *Squaring makes the line sensitive to outliers* - a point twice as far as other points will contribute four times as much to the line.
+
+```{r}
+set.seed(6101)
+n <- 80
+d <- data.frame(x = runif(n, 0, 10)) # create x values
+d$y <- 3 + 2 * d$x + rnorm(n, 0, 2.5) # create y values as a linear output of x
+# intercept = 3
+# slope = 2
+# random error: rnorm(n, 0, 2.5)
+
+fit <- lm(y ~ x, data = d)
+
+plot(d$x, d$y, pch = 19, col = "gray35", xlab = "x", ylab = "y")
+abline(fit, lwd = 2, col = "firebrick")
+segments(d$x, d$y, d$x, fitted(fit), col = "gray65")
+
+```
+
+## Regression Output
+
+```{r}
+set.seed(6101)
+d <- data.frame(x = runif(80, 0, 10))
+d$y <- 3 + 2 * d$x + rnorm(80, 0, 2.5)
+
+summary(lm(y ~ x, data = d))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
