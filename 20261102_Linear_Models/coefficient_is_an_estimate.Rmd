@@ -1,0 +1,68 @@
+---
+title: "coefficient_is_an_estimate"
+author: "Sam Nicholes"
+date: "2026-11-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# The Coefficient is an Estimate
+
+The slope (beta_hat) from a given model is not the actual relationship (parameter: beta). It is based/drawn from a distribution of slopes.
+
+## Simulation of sampling 5000 slopes from a population
+```{r}
+set.seed(1)
+n <- 80
+slopes <- replicate(5000, {
+  d <- data.frame(x = runif(n, 0, 10))
+  d$y <- 3 + 2 * d$x + rnorm(n, 0, 2.5)     # the TRUE slope is 2 with intercept 3
+  coef(lm(y ~ x, data = d))[2] # fit a model and extract the coefficient for x
+})
+
+hist(slopes, breaks = 50, col = "gray75", border = "white",
+     main = "5,000 slopes from the same population", xlab = "estimated slope")
+abline(v = 2, col = "firebrick", lwd = 2)
+
+round(c(mean = mean(slopes), sd = sd(slopes)), 4) # mean and sd of the distribution of simulated slopes
+```
+
+- **mean**: `r round(mean(slopes), 4)`
+
+- **Std. Dev**: `r round(sd(slopes), 4)`
+
+## Two Model Fittings and Slopes
+```{r}
+# Model 6101
+set.seed(6101)
+d6101 <- data.frame(x = runif(80, 0, 10))
+d6101$y <- 3 + 2 * d6101$x + rnorm(80, 0, 2.5)
+mod6101 <- lm(y ~ x, data = d6101)
+
+round(coef(summary(mod6101)), 4)
+
+# Model 1
+set.seed(1)
+d1 <- data.frame(x = runif(80, 0, 10))
+d1$y <- 3 + 2 * d1$x + rnorm(80, 0, 2.5)
+mod1 <- lm(y ~ x, data = d1)
+
+round(coef(summary(mod1)), 4)
+
+
+
+```
+
+### Model 1:
+
+
+
+
+
+
+
+
+

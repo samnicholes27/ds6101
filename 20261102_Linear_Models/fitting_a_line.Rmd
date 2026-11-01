@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 For a model to be linear, the inputs and outputs must scale proportionally. e.g. inputs scale by a factor of 2, and outputs scale by a factor of 2.
 The model describes a line and has an intercept (beta_0) and slope (beta_i). *When x = 0 then y = beta_o*.
 
-**Predictors** - xi... the input(s) to a model (indendendent variable(s))
+**Predictors** - xi... the input(s) to a model (independent variable(s))
 
 **Outcome** - yi... the output of a model (dependent variable)
 
