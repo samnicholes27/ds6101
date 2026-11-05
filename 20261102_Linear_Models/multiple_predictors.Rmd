@@ -1,0 +1,187 @@
+---
+title: "multiple_predictors"
+author: "Sam Nicholes"
+date: "2026-11-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Multivariable Models
+
+## Multiple Predictors and Omitted Variable Bias
+In a single variable model, the coefficient is inflated. The observed variance is being overly attributed to the single variable. Once covariates are included in the model, then variance is more accurately attributed among them.
+
+```{r}
+set.seed(2)
+N <- 500 # sample size
+skill <- rnorm(N) # skill variable
+hours <- 2 + 0.9 * skill + rnorm(N, 0, 0.5) # hours variable, linearly related to skill
+score <- 50 + 8 * skill + 1.5 * hours + rnorm(N, 0, 3) # score outcome variable, linearly related to skill and hours
+
+round(c(naive    = coef(lm(score ~ hours))[2], # simple regression
+        adjusted = coef(lm(score ~ hours + skill))[2], # adjusted regression
+        truth    = 1.5), 3) # simulation true coefficient value for hours
+```
+
+Once skill is included in the mode, the coefficient for hours is more reflective of the parameter.
+
+
+
+## Categorical Predictors
+
+```{r}
+set.seed(9)
+plan  <- factor(rep(c("free", "pro", "ent"), each = 40),
+                levels = c("free", "pro", "ent"))
+spend <- c(rnorm(40, 50, 8), rnorm(40, 58, 8), rnorm(40, 66, 8))
+
+round(coef(summary(lm(spend ~ plan))), 3)
+```
+
+
+### Inclusion of categorical predictors shifts the intercept, but doesn't affect the slope
+
+```{r}
+set.seed(9)
+plan  <- factor(rep(c("free", "pro", "ent"), each = 40),
+                levels = c("free", "pro", "ent"))
+
+# --- Part 1: your original model (factor only) -------------------------
+spend0 <- c(rnorm(40, 50, 8), rnorm(40, 58, 8), rnorm(40, 66, 8))
+fit0   <- lm(spend0 ~ plan)
+round(coef(summary(fit0)), 3)
+
+# The dummy columns R builds behind the scenes (one row per plan)
+model.matrix(~ plan)[c(1, 41, 81), ]
+
+# Intercept = mean of baseline (free); each dummy coefficient = shift from it
+b0 <- coef(fit0)
+rbind(from_coefs = c(free = b0[[1]],
+                     pro  = b0[[1]] + b0[["planpro"]],
+                     ent  = b0[[1]] + b0[["planent"]]),
+      group_means = tapply(spend0, plan, mean))
+
+# --- Part 2: add a continuous predictor so the shifts become lines -----
+usage <- runif(120, 0, 10)
+shift <- c(free = 0, pro = 8, ent = 16)          # true intercept shifts
+spend <- 40 + 2 * usage + shift[as.character(plan)] + rnorm(120, 0, 4)
+
+fit <- lm(spend ~ usage + plan)
+round(coef(summary(fit)), 3)
+
+b    <- coef(fit)
+ints <- c(free = b[["(Intercept)"]],
+          pro  = b[["(Intercept)"]] + b[["planpro"]],
+          ent  = b[["(Intercept)"]] + b[["planent"]])
+
+cols <- c(free = "steelblue", pro = "darkorange", ent = "firebrick")
+
+plot(usage, spend, col = cols[as.character(plan)], pch = 19,
+     xlab = "usage", ylab = "spend",
+     main = "Same slope, different intercepts")
+for (p in names(ints)) abline(a = ints[[p]], b = b[["usage"]],
+                              col = cols[[p]], lwd = 2)
+legend("topleft", legend = names(cols), col = cols, pch = 19, lwd = 2,
+       title = "plan")
+
+# Vertical gap between lines at any usage value = the dummy coefficient
+segments(x0 = 0, y0 = ints[["free"]], y1 = ints[["pro"]], lty = 2)
+segments(x0 = 0, y0 = ints[["free"]], y1 = ints[["ent"]], lty = 3)
+
+
+```
+
+
+
+
+## Interactions
+```{r}
+set.seed(12)
+n <- 300
+hours <- runif(n, 0, 10)
+tier  <- factor(sample(c("basic", "premium"), n, replace = TRUE))
+# The effect of hours is twice as large for premium users.
+y <- 40 + 2 * hours + 5 * (tier == "premium") +
+     2 * hours * (tier == "premium") + rnorm(n, 0, 4)
+
+round(coef(summary(lm(y ~ hours * tier))), 3)
+```
+
+
+
+```{r}
+set.seed(12)
+n <- 300
+hours <- runif(n, 0, 10)
+tier  <- factor(sample(c("basic", "premium"), n, replace = TRUE),
+                levels = c("basic", "premium"))   # basic = reference level
+# The effect of hours is twice as large for premium users.
+y <- 40 + 2 * hours + 5 * (tier == "premium") +
+     2 * hours * (tier == "premium") + rnorm(n, 0, 4)
+
+# --- Part 1: your original interaction model ---------------------------
+fit_int <- lm(y ~ hours * tier)
+round(coef(summary(fit_int)), 3)
+
+# The columns R builds: the interaction column is hours x dummy
+rows <- c(which(tier == "basic")[1], which(tier == "premium")[1])
+model.matrix(~ hours * tier)[rows, ]
+
+# --- Part 2: rebuild each tier's line from the coefficients ------------
+b <- coef(fit_int)
+lines_from_coefs <- rbind(
+  basic   = c(intercept = b[["(Intercept)"]],
+              slope     = b[["hours"]]),
+  premium = c(intercept = b[["(Intercept)"]] + b[["tierpremium"]],
+              slope     = b[["hours"]] + b[["hours:tierpremium"]])
+)
+lines_from_coefs
+
+# Check: fitting each tier separately gives the same intercepts and slopes
+rbind(basic   = coef(lm(y ~ hours, subset = tier == "basic")),
+      premium = coef(lm(y ~ hours, subset = tier == "premium")))
+
+# --- Part 3: the gap between tiers depends on hours --------------------
+gap <- function(h) b[["tierpremium"]] + b[["hours:tierpremium"]] * h
+data.frame(hours = c(0, 5, 10), premium_minus_basic = round(gap(c(0, 5, 10)), 2))
+
+# --- Part 4: additive (parallel) vs interaction model ------------------
+fit_add <- lm(y ~ hours + tier)
+
+cols <- c(basic = "steelblue", premium = "firebrick")
+draw <- function(fit, title) {
+  plot(hours, y, col = adjustcolor(cols[as.character(tier)], 0.5), pch = 19,
+       xlab = "hours", ylab = "y", main = title)
+  for (t in names(cols)) {
+    nd <- data.frame(hours = c(0, 10), tier = factor(t, levels = levels(tier)))
+    lines(nd$hours, predict(fit, nd), col = cols[[t]], lwd = 3)
+  }
+  legend("topleft", legend = names(cols), col = cols, lwd = 3, pch = 19,
+         title = "tier")
+}
+
+par(mfrow = c(1, 2))
+draw(fit_add, "Additive: same slope (misfit)")
+draw(fit_int, "Interaction: slopes differ")
+par(mfrow = c(1, 1))
+
+# Formal test: does allowing different slopes improve the fit?
+anova(fit_add, fit_int)
+```
+**Additive graph (left)**: Forcing one shared slope produces parallel lines, so the model can only say that premium users sit a fixed amount higher at every value of hours. Because the true slopes differ (about 2 for basic, about 4 for premium), the single compromise slope is too steep for basic users and too shallow for premium users, and the points drift away from their lines at high hours. The constant gap it reports (roughly 15) is wrong almost everywhere, since the real gap grows from about 5 at zero hours to about 25 at ten.
+
+$$
+y_i = \beta_0 + \beta_1\,\text{hours}_i + \beta_2\,\text{premium}_i + \varepsilon_i
+$$
+
+
+**Interaction graph (right)**: Giving each tier its own intercept and slope lets the lines fan apart, starting about 5 apart and widening by about 2 for every additional hour. Each line now runs through the middle of its own cloud of points, with no systematic over- or undershooting. The effect of hours is conditional on tier (about 2 for basic, about 4 for premium), so no single number describes “the effect of an hour” or “the premium difference” without saying where you are on the other variable.
+
+$$
+y_i = \beta_0 + \beta_1\,\text{hours}_i + \beta_2\,\text{premium}_i + \beta_3\,(\text{hours}_i \times \text{premium}_i) + \varepsilon_i,
+\qquad \varepsilon_i \sim N(0, \sigma^2)
+$$

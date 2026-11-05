@@ -25,7 +25,8 @@ slopes <- replicate(5000, {
 
 hist(slopes, breaks = 50, col = "gray75", border = "white",
      main = "5,000 slopes from the same population", xlab = "estimated slope")
-abline(v = 2, col = "firebrick", lwd = 2)
+abline(v = 2, col = "firebrick", lwd = 3) # true population mean
+abline(v = mean(slopes), col = "darkblue", lwd = 2, lty = 2) # sampling distribution mean
 
 round(c(mean = mean(slopes), sd = sd(slopes)), 4) # mean and sd of the distribution of simulated slopes
 ```
@@ -35,6 +36,7 @@ round(c(mean = mean(slopes), sd = sd(slopes)), 4) # mean and sd of the distribut
 - **Std. Dev**: `r round(sd(slopes), 4)`
 
 ## Two Model Fittings and Slopes
+Two models (different seeds) where the coefficient and SE are within the range of the sampling distribution. The SE is the SD of the sampling distribution for the given coefficient.
 ```{r}
 # Model 6101
 set.seed(6101)
@@ -52,15 +54,55 @@ mod1 <- lm(y ~ x, data = d1)
 
 round(coef(summary(mod1)), 4)
 
-
-
 ```
 
-### Model 1:
+
+## Confidence Interval
+
+*Reminder* - SE is a single number that answers: how much does this estimate wobble across repeated samples? I.E. Repeat  sampling 1000 times. Each sample results in a different estimate. The 1000 estimates form a cloud around the true parameter. The width of the cloud is the standard error.
+
+*Reminder* - CI is a range that answers: given this SE, what values of the true coefficient are plausibly consistent with my data. The SE is multiplied by a critical value (t score/z score) to give a margin of error that would capture the true parameter values 95% of the time (for 95% confidence). The CI is in the same units as the coefficient. If the CI includes the null value, then the coefficient is not significant - the probability of getting a result, the coefficient, is very likely given that the null hypothesis is true.
+
+Why CI is used to determine significance and not SE - SE describes natural "wobbling" attributed to data. The CI describes data that is too far away from the null to be attributed to chance. If the CI includes the null, the difference is not due to chance and just natural variation.
+
+```{r}
+
+# Model 6101
+set.seed(6101)
+d6101 <- data.frame(x = runif(80, 0, 10))
+d6101$y <- 3 + 2 * d6101$x + rnorm(80, 0, 2.5)
+mod6101 <- lm(y ~ x, data = d6101)
+
+confint(mod6101)
+
+# Model 1
+set.seed(1)
+d1 <- data.frame(x = runif(80, 0, 10))
+d1$y <- 3 + 2 * d1$x + rnorm(80, 0, 2.5)
+mod1 <- lm(y ~ x, data = d1)
+
+confint(mod1)
+```
 
 
 
+## Standard Error
 
+**SE(beta_1) = sigma / sqrt(sum(x_i - x_bar)^2)**
+
+When the difference between x_i and x_bar widens, the observed data has captured more variance (more measured variance), the SE of the estimate is more precise as a result.
+
+```{r}
+set.seed(7)
+# Same n, same true slope, same noise. Only the range of x differs.
+narrow <- data.frame(x = runif(60, 4.5, 5.5))
+wide   <- data.frame(x = runif(60, 0, 10))
+narrow$y <- 3 + 2 * narrow$x + rnorm(60, 0, 2.5)
+wide$y   <- 3 + 2 * wide$x   + rnorm(60, 0, 2.5)
+
+round(c(se_narrow_x = coef(summary(lm(y ~ x, narrow)))["x", "Std. Error"],
+        se_wide_x   = coef(summary(lm(y ~ x, wide)))["x", "Std. Error"]), 4)
+```
 
 
 
