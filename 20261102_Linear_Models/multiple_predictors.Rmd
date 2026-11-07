@@ -185,3 +185,68 @@ $$
 y_i = \beta_0 + \beta_1\,\text{hours}_i + \beta_2\,\text{premium}_i + \beta_3\,(\text{hours}_i \times \text{premium}_i) + \varepsilon_i,
 \qquad \varepsilon_i \sim N(0, \sigma^2)
 $$
+
+
+
+## Multiple Predictors and DFs
+
+- Every additional predictor spends 1 DF.
+
+- Predictors that are correlated with each other and inflate each other's SE. This is multicolinearity. Look for large SEs; use VIF to detect multicolinearity.
+
+```{r}
+# Demonstrating multicollinearity in a linear model
+set.seed(42)
+n <- 100
+
+# x1 and x2 are nearly the same variable (correlation ~0.99)
+x1 <- rnorm(n)
+x2 <- x1 + rnorm(n, sd = 0.1)
+
+# True model: y = 2 + 3*x1 + 2*x2 + noise
+y <- 2 + 3 * x1 + 2 * x2 + rnorm(n, sd = 2)
+dat <- data.frame(y, x1, x2)
+
+cat("Correlation between x1 and x2:", round(cor(x1, x2), 3), "\n\n")
+
+# 1. Full model: both predictors
+full <- lm(y ~ x1 + x2, data = dat)
+print(summary(full))
+
+# 2. Each predictor alone
+m1 <- lm(y ~ x1, data = dat)
+m2 <- lm(y ~ x2, data = dat)
+cat("\nx1 alone:\n"); print(round(summary(m1)$coefficients, 3))
+cat("\nx2 alone:\n"); print(round(summary(m2)$coefficients, 3))
+
+# 3. Variance Inflation Factor (computed by hand, no packages needed)
+vif_x1 <- 1 / (1 - summary(lm(x1 ~ x2))$r.squared)
+cat("\nVIF for x1 and x2:", round(vif_x1, 1), "\n")
+# (With the car package: car::vif(full))
+
+# 4. Instability: refit on bootstrap resamples and watch the coefficients swing
+boot <- replicate(500, {
+  d <- dat[sample(n, replace = TRUE), ]
+  coef(lm(y ~ x1 + x2, data = d))[c("x1", "x2")]
+})
+cat("\nBootstrap SD of coefficients:\n")
+print(round(apply(boot, 1, sd), 2))
+cat("Correlation between the x1 and x2 estimates across resamples:",
+    round(cor(boot[1, ], boot[2, ]), 3), "\n")
+
+# Overall fit stays good even though individual coefficients are unreliable
+cat("\nR-squared (full):", round(summary(full)$r.squared, 3),
+    "| (x1 only):", round(summary(m1)$r.squared, 3), "\n")
+```
+
+
+
+
+
+
+
+
+
+
+
+

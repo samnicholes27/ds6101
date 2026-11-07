@@ -1,0 +1,136 @@
+---
+title: "r_squared"
+author: "Sam Nicholes"
+date: "2026-11-07"
+output: html_document
+---
+
+# R-Squared and What It Does Not Tell You
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Calculation
+
+$$
+R^2 = 1 - \frac{\sum_{i}(y_i - \hat{y}_i)^2}{\sum_{i}(y_i - \bar{y})^2}
+$$
+
+- **y_i** is an observation
+
+- **y_hat** is the model prediction for the observation
+
+- **y_bar** is the mean for all observed values of y
+
+- **Numerator** is the sum of the squared differences between the actual and predicted values of the observation. It is the squared error that the model makes in predictions of the observations. This is also called RSS.
+
+- **Denominator** is the unscaled, total variation in y. This is also called TSS.
+
+- **Ratio** tells us the fraction of total variance that the model fails to explain.
+
+- **1 - Ratio** tells us the fraction of the total variance that the model can explain.
+
+
+
+## Limitations
+R-Squared, the intercept, and the slope cannot tell us the shape of the relationship. All models show similar output, but the graphs show the shape of the relationship between X and Y.
+
+```{r}
+data(anscombe)
+
+par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+for (i in 1:4) {
+  x <- anscombe[[paste0("x", i)]]; y <- anscombe[[paste0("y", i)]]
+  plot(x, y, pch = 19, col = "gray30", main = paste("set", i),
+       xlim = c(3, 20), ylim = c(2, 14))
+  abline(lm(y ~ x), col = "firebrick", lwd = 2)
+}
+```
+
+
+```{r}
+data(anscombe)
+t(sapply(1:4, function(i) {
+  f <- lm(anscombe[[paste0("y", i)]] ~ anscombe[[paste0("x", i)]])
+  c(set = i, intercept = coef(f)[1], slope = coef(f)[2],
+    r_squared = summary(f)$r.squared)
+})) |> round(3)
+```
+
+
+
+
+
+## R-Squared will always increase with added predictors
+
+- R-squared will always increase with added predictors, regardless of if the predictor is trully meaningful.
+
+- Adj-R-Squared deducts for added predictors, it is useful for comparing across models of varying numbers of predictors.
+
+```{r}
+set.seed(4)
+y <- rnorm(40)
+X <- as.data.frame(matrix(rnorm(40 * 8), 40, 8))   # eight columns of noise
+
+out <- t(sapply(1:8, function(k) {
+  m <- lm(y ~ ., data = cbind(X[, 1:k, drop = FALSE], y = y))
+  c(predictors = k, R2 = summary(m)$r.squared, adj_R2 = summary(m)$adj.r.squared)
+}))
+round(out, 3)
+```
+
+
+
+## RSE
+
+**RSE** is the Residual Standard Error, is squared sum of the gaps between observations (y_i) and the line (y_hat), standardized in units of y.
+
+
+$$
+\mathrm{RSE} = \hat{\sigma} = \sqrt{\frac{\sum_{i=1}^{n}\left(y_i - \hat{y}_i\right)^2}{n - p - 1}}
+$$
+
+- n = sample size
+
+- p = number of predictors including the intercept (predictors + intercept = p)
+
+- sigma_hat = the estimated standard deviation of the errors, the RSE.
+
+
+## RSE vs R-Squared
+
+- RSE answers the question: How far off are my predictions on average? It reports the magnitude of the error between y_i and y_hat.
+
+- R-Squared answer the question: How much of the total variance in Y (TSS), is explained by the regression line (RSS)?
+
+```{r}
+set.seed(21)
+x <- runif(200, 0, 10)
+noise <- rnorm(200, 0, 2)
+
+# Same relationship, same noise. Only the spread of x differs.
+narrow <- data.frame(x = x * 0.2 + 4, y = 3 + 2 * (x * 0.2 + 4) + noise)
+wide   <- data.frame(x = x,           y = 3 + 2 * x + noise)
+
+round(c(R2_narrow_x = summary(lm(y ~ x, narrow))$r.squared,
+        R2_wide_x   = summary(lm(y ~ x, wide))$r.squared,
+        rse_narrow  = summary(lm(y ~ x, narrow))$sigma,
+        rse_wide    = summary(lm(y ~ x, wide))$sigma), 3)
+```
+
+The output shows that the narrow differences in the observations of x reflect low share of explained variance in y, while wide differences in x result a larger share of explained variance in y, even though the underlying population is the same. RSE shows the typical size of the error between y_i and y_hat in units of y. 
+
+
+
+## Misreadings of R-Squared
+
+- “High R2 means the model is correct.” R-Square does not reflect model accuracy (good/bad), just share of explained variance.
+
+- “Adding this predictor improved R2, so it belongs.” R-Square will always increase with added predictors. Again, size of R-squared does not reflect accuracy of the model.
+
+- “Low R2 means no relationship.” The coefficient and its interval answer the magnitude and direction of the relationship; a small, precisely estimated effect in noisy data is a real finding, even with a small R2.
+
+- “R2 is prediction accuracy.” R-Square does not reflect model accuracy, just share of explained variance.
+
