@@ -1,0 +1,281 @@
+---
+title: "model_checking"
+author: "Sam Nicholes"
+date: "2026-11-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Residuals
+
+## Checking Residuals for Fit
+
+```{r}
+set.seed(6101)
+x <- runif(120, 0, 10)
+y <- 2 + 0.6 * x^2 + rnorm(120, 0, 8)      # the truth is a CURVE, x^2
+fit <- lm(y ~ x)
+
+signif(c(r_squared = summary(fit)$r.squared,
+         pval_slope = coef(summary(fit))["x", "Pr(>|t|)"]), 3)
+```
+
+The model fits y values that are a function of a quadratic equation. The model still reports R-squared with high explained variance and a significant coefficient for the predictor x.
+
+It's necessary to check the residuals,
+
+```{r}
+
+set.seed(6101)
+x <- runif(120, 0, 10); y <- 2 + 0.6 * x^2 + rnorm(120, 0, 8)
+fit <- lm(y ~ x)
+
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+plot(x, y, pch = 19, col = "gray35", main = "The fit looks fine")
+abline(fit, col = "firebrick", lwd = 2)
+plot(fitted(fit), resid(fit), pch = 19, col = "gray35",
+     main = "The residuals do not", xlab = "fitted", ylab = "residual")
+abline(h = 0, col = "firebrick", lwd = 2)
+
+```
+
+While the model plot is passable, the plot of the residuals shows the quadratic form of the y values. The model predicts a linear relationship, but the data points of the residuals so a curvileaner relationship. 
+
+
+
+
+
+## Homoscedastic Variance
+
+Linear regression assumes homoscedastic variance for residuals (that the variance is constant)
+
+First model shows residuals that are heteroscedastic.
+```{r}
+set.seed(11)
+x <- runif(200, 0, 10)
+y <- 3 + 2 * x + rnorm(200, 0, 0.4 + 0.9 * x)   # spread grows with x
+fit <- lm(y ~ x)
+
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+plot(x, y, pch = 19, col = "gray35", main = "data")
+abline(fit, col = "firebrick", lwd = 2)
+plot(fitted(fit), resid(fit), pch = 19, col = "gray35",
+     main = "residuals: a funnel - heteroscedastic", xlab = "fitted", ylab = "residual")
+abline(h = 0, col = "firebrick", lwd = 2)
+```
+
+
+
+The second model shows residuals that are homoscedastic.
+```{r}
+set.seed(11)
+x <- runif(200, 0, 10)
+y <- 3 + 2 * x + rnorm(200, 0, 3)   # constant spread: homoscedastic
+
+fit <- lm(y ~ x)
+
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+plot(x, y, pch = 19, col = "gray35", main = "data")
+abline(fit, col = "firebrick", lwd = 2)
+plot(fitted(fit), resid(fit), pch = 19, col = "gray35",
+     main = "residuals: constant variance", xlab = "fitted", ylab = "residual")
+abline(h = 0, col = "firebrick", lwd = 2)
+```
+
+
+
+## Checking Residuals - 4 Plots (Emphasis on Residuals-v-Fitted and Scale-Location)
+
+- **Residuals vs Fitted**: Is the average residual zero across y_hat? IS the spread of the residuals constant across y_hat?
+
+- **Scale-Location**: Does residual variance increase as y_hat increases? The variance should be constant/homoscedasti, if not the model isn't a good fit.
+
+
+
+```{r}
+set.seed(11)
+x <- runif(200, 0, 10); y <- 3 + 2 * x + rnorm(200, 0, 0.4 + 0.9 * x)
+fit <- lm(y ~ x)
+
+par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+plot(fit)
+```
+
+
+The same four plots, but variance is homoscedastic.
+```{r}
+set.seed(11)
+x <- runif(200, 0, 10); y <- 3 + 2 * x + rnorm(200, 0, 3)   # constant sd
+fit <- lm(y ~ x)
+
+par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+plot(fit)
+```
+
+
+### Residual vs Fitted
+```{r}
+set.seed(11)
+x <- runif(200, 0, 10)
+z <- rnorm(200)
+
+y_hetero <- 3 + 2 * x + z * (0.4 + 0.9 * x)
+y_homo   <- 3 + 2 * x + z * 3
+
+fit_hetero <- lm(y_hetero ~ x)
+fit_homo   <- lm(y_homo ~ x)
+
+# Rebuild the plotted quantities by hand: raw residuals vs fitted values
+fit <- fit_homo
+e    <- resid(fit)
+yhat <- fitted(fit)
+all.equal(e, unname(y_homo - yhat), check.attributes = FALSE)   # TRUE
+
+# Forced by least squares, so identical in BOTH fits (nothing to learn here)
+sum(resid(fit_homo));   sum(resid(fit_hetero))                  # ~0
+cor(resid(fit_homo),   fitted(fit_homo))                        # ~0
+cor(resid(fit_hetero), fitted(fit_hetero))                      # ~0
+
+# Question 1: is the center zero everywhere?
+# A linear trend is impossible, so test for curvature with a squared term
+curv <- function(fit) {
+  f <- fitted(fit); e <- resid(fit)
+  summary(lm(e ~ f + I(f^2)))$coefficients["I(f^2)", c("Estimate", "Pr(>|t|)")]
+}
+curv(fit_homo)      # ~0, not significant (the true mean IS linear)
+curv(fit_hetero)    # also ~0: a funnel is not curvature
+
+# Question 2: is the spread constant?
+# Compare residual sd in the lower vs upper half of the fitted values
+spread_ratio <- function(fit) {
+  f <- fitted(fit); e <- resid(fit)
+  hi <- f > median(f)
+  sd(e[hi]) / sd(e[!hi])
+}
+spread_ratio(fit_homo)      # near 1
+spread_ratio(fit_hetero)    # well above 1
+
+par(mfrow = c(1, 2))
+plot(fit_hetero, which = 1, main = "heteroscedastic")
+plot(fit_homo,   which = 1, main = "homoscedastic")
+```
+
+
+### Scale-Location
+```{r}
+set.seed(11)
+x <- runif(200, 0, 10)
+z <- rnorm(200)
+
+y_hetero <- 3 + 2 * x + z * (0.4 + 0.9 * x)
+y_homo   <- 3 + 2 * x + z * 3
+
+fit_hetero <- lm(y_hetero ~ x)
+fit_homo   <- lm(y_homo ~ x)
+
+# Rebuild the plotted quantity by hand
+fit <- fit_homo
+r <- resid(fit) / (summary(fit)$sigma * sqrt(1 - hatvalues(fit)))
+all.equal(r, rstandard(fit))            # TRUE
+
+mean(sqrt(abs(rstandard(fit_homo))))    # near 0.82
+mean(sqrt(abs(rstandard(fit_hetero))))  # also near 0.82: the average hides the trend
+
+# The trend is what differs: slope of sqrt|r| on fitted values
+coef(lm(sqrt(abs(rstandard(fit_homo)))   ~ fitted(fit_homo)))[2]    # ~0
+coef(lm(sqrt(abs(rstandard(fit_hetero))) ~ fitted(fit_hetero)))[2]  # clearly positive
+
+par(mfrow = c(1, 2))
+plot(fit_hetero, which = 3, main = "heteroscedastic")
+plot(fit_homo,   which = 3, main = "homoscedastic")
+```
+
+
+## Independence
+
+Independence of residuals is another assumption (which underlies homoscedastic variance).
+
+
+### Residuals against time
+When errors are correlated over time, each new residual partly repeats the one before it, so you have less independent information than your row count suggests. The residuals show long runs of the same sign, and the standard errors come out too small, which makes results look more significant than they are.
+
+```{r}
+set.seed(11)
+n <- 200
+t <- 1:n
+x <- rnorm(n)
+
+e_ind <- rnorm(n, 0, 2)
+e_ar  <- as.numeric(arima.sim(list(ar = 0.8), n = n, sd = 2 * sqrt(1 - 0.8^2)))  # marginal sd = 2
+
+y_ok    <- 3 + 2 * x + e_ind
+y_serial <- 3 + 2 * x + e_ar
+y_drift <- 3 + 2 * x + 0.04 * t + e_ind       # time trend we forgot to model
+
+fits <- list(
+  "independent"   = lm(y_ok ~ x),
+  "serial correlation" = lm(y_serial ~ x),
+  "drift"         = lm(y_drift ~ x)
+)
+
+par(mfrow = c(3, 2), mar = c(4, 4, 3, 1))
+for (nm in names(fits)) {
+  e <- resid(fits[[nm]])
+  plot(t, e, type = "b", pch = 19, cex = 0.5, col = "gray35",
+       main = paste("residuals vs time:", nm), xlab = "time", ylab = "residual")
+  abline(h = 0, col = "firebrick", lwd = 2)
+  acf(e, main = paste("ACF:", nm))
+}
+
+# One-number summaries
+lag1 <- function(f) cor(resid(f)[-1], resid(f)[-n])
+dw   <- function(f) { e <- resid(f); sum(diff(e)^2) / sum(e^2) }   # Durbin-Watson
+sapply(fits, lag1)   # ~0 for independent; ~0.8 for serial; high for drift
+sapply(fits, dw)     # ~2 is healthy; well below 2 means positive serial correlation
+```
+
+
+### Clustered Residuals
+When rows belong to groups (like sessions within a user), rows from the same group are alike, so you effectively have about as many observations as groups, not rows. The standard errors come out too small here too, but the usual residual plots look fine, so you only catch it by plotting residuals by group.
+
+```{r}
+set.seed(11)
+n_users <- 200; m <- 10
+user <- rep(1:n_users, each = m)
+x    <- rnorm(n_users)[user]                     # user-level predictor
+
+u_eff <- rnorm(n_users, 0, 2)[user]              # shared user effect (variance 4)
+y_dep <- 3 + 0 * x + u_eff + rnorm(n_users * m, 0, 1)             # total variance 5
+y_ind <- 3 + 0 * x + rnorm(n_users * m, 0, sqrt(5))              # total variance 5
+
+fit_dep <- lm(y_dep ~ x)
+fit_ind <- lm(y_ind ~ x)
+
+idx <- user <= 15      # look at the first 15 users
+
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+plot(fitted(fit_dep), resid(fit_dep), pch = 19, col = "gray35",
+     main = "grouped data: resid vs fitted", xlab = "fitted", ylab = "residual")
+abline(h = 0, col = "firebrick", lwd = 2)
+
+boxplot(resid(fit_ind)[idx] ~ user[idx], col = "gray85",
+        main = "independent: residuals by user", xlab = "user", ylab = "residual")
+abline(h = 0, col = "firebrick", lwd = 2)
+
+boxplot(resid(fit_dep)[idx] ~ user[idx], col = "gray85",
+        main = "grouped: residuals by user", xlab = "user", ylab = "residual")
+abline(h = 0, col = "firebrick", lwd = 2)
+
+# Fraction of residual variance that is "between users"
+icc <- function(e) {
+  grp_means <- tapply(e, user, mean)
+  (var(grp_means) - var(e) / m) / var(e)   # rough ANOVA-style estimate
+}
+icc(resid(fit_ind))   # ~0
+icc(resid(fit_dep))   # ~0.8  (true: 4 / (4 + 1))
+```
+
+
