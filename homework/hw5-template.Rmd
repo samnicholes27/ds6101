@@ -215,12 +215,74 @@ Stopping the experiment early results in the most noise in the data, and a large
 
 
 # Part 4 · Count before you compare (14 points)
+```{r}
+set.seed(6101)
+v <- make_users(40000)
+v$arm <- sample(rep(0:1, each = nrow(v) / 2))
+v$converted <- convert(p_convert(v$engagement))
+lost <- v$arm == 1 & v$engagement < -0.5 & runif(nrow(v)) < 0.30
+logged <- v[!lost, ]
+```
+
 
 ## (a) The split, then the outcome
+```{r}
+
+n_logged <- table(logged$arm)          # logged users per arm (0 = control, 1 = treatment)
+n_logged
+chisq.test(n_logged, p = c(0.5, 0.5))  # sample ratio check against 50/50
+
+k1 <- sum(logged$converted[logged$arm == 1])
+n1 <- sum(logged$arm == 1)
+k0 <- sum(logged$converted[logged$arm == 0])
+n0 <- sum(logged$arm == 0)
+
+k1 / n1                                # treatment rate
+k0 / n0                                # control rate
+diff_conv_rate <- k1 / n1 - k0 / n0                      # difference, treatment minus control (keep the sign)
+mod_split <- prop.test(c(k1, k0), c(n1, n0), correct = FALSE)
+
+```
+
+n arm1 = `r n0`
+
+n arm2 = `r n1`
+
+p-value: `r round(mod_split$p.value, 4)`
+
+Difference in rate: `r diff_conv_rate`
+
 
 ## (b) Two thousand broken experiments
+```{r}
+set.seed(6101)
+
+res <- replicate(2000, {
+  v <- make_users(40000)                         # engagement
+  arm <- sample(rep(0:1, each = nrow(v) / 2))    # arm
+  conv <- convert(p_convert(v$engagement))       # conversion
+  lost <- arm == 1 & v$engagement < -0.5 & runif(nrow(v)) < 0.30   # the loss
+
+  keep <- !lost
+  n1 <- sum(arm[keep] == 1); n0 <- sum(arm[keep] == 0)
+  k1 <- sum(conv[keep & arm == 1]); k0 <- sum(conv[keep & arm == 0])
+
+  p_split <- chisq.test(c(n0, n1), p = c(0.5, 0.5))$p.value
+  pt <- prop.test(c(k1, k0), c(n1, n0), correct = FALSE)
+  c(p_split = p_split, diff = k1 / n1 - k0 / n0, p_comp = pt$p.value)
+})
+res <- t(res)    # 2000 x 3
+
+mean(res[, "p_split"] < 0.001)                               # share with split p < 0.001
+mean(res[, "diff"] > 0 & res[, "p_comp"] < 0.05)             # treatment ahead, p < 0.05
+mean(res[, "diff"])                                          # mean difference
+
+
+```
+
 
 ## (c) Rebalancing, and what to do instead
+
 
 # Part 5 · Randomize users, count sessions (16 points)
 
