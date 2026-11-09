@@ -110,29 +110,109 @@ P-value: `r format.pval(mod_assign$p.value, digits = 2, eps = 0.001)`
 
 ## (1c) What the opt-in comparison measured
 ```{r}
-mean(u$engagement[k_opted])
-mean(u$engagement[k_notopt])
-mean(u$engagement[k_assign])
-mean(u$engagement[k_notassign])
+mean(u$engagement[u$opted_in == 1])    # opted in
+mean(u$engagement[u$opted_in == 0])    # did not opt in
+mean(u$engagement[u$assigned == 1])    # assigned
+mean(u$engagement[u$assigned == 0])    # not assigned
 ```
 
-
+In part A, the opted in conversion is based on those who are inherently more engaged and more likely to convert, it is self-selection bias. In part B, users are randomized, this more-engaged behavior is more equally distributed, so a group "opted in" is not based on self-selection but created from randomization. Since engagement is not record, this would be a case of omitted variable bias, neither part A or B can correct for this since it wasn't actually measured.
 
 # Part 2 · The sample size, before any data (14 points)
 
 ## (2a) The baseline, and the users per arm
+```{r}
+p0 <- mean(p_convert(u$engagement)) #baseline conversion rate
+p0
+
+pw_05 <- power.prop.test(p1 = p0, p2 = p0 + 0.005, power = 0.80, sig.level = 0.05) # 0.5 point increase
+pw_10 <- power.prop.test(p1 = p0, p2 = p0 + 0.010, power = 0.80, sig.level = 0.05) # 1.0 point increase
+
+ceiling(pw_05$n)   # users per arm, 0.5 pp
+ceiling(pw_10$n)   # users per arm, 1.0 pp
+
+```
+
+The needed sample size to detect a 0.5 percentage point increase from a
+baseline of `r round(p0, 3)` is n = `r format(ceiling(pw_05$n), big.mark = ",", scientific = FALSE)`
+per arm. For a 1.0 percentage point increase, n = `r format(ceiling(pw_10$n), big.mark = ",", scientific = FALSE)`
+per arm is needed.
+
 
 ## (2b) How many weeks
+```{r}
+
+weeks_05 <- 2 * ceiling(pw_05$n) / 4000
+weeks_10 <- 2 * ceiling(pw_10$n) / 4000
+
+weeks_05
+ceiling(weeks_05)
+
+weeks_10
+ceiling(weeks_10)
+
+```
+
+For a 0.5 point increase, `r ceiling(weeks_05)` weeks are required to reach the requisite sample size. For a 1.0 point increase, `r ceiling(weeks_10)` weeks are needed.
 
 ## (2c) For the product manager
+To achieve a 0.5 point increase, it requires `r ceiling(weeks_05)` weeks, which exceeds the month timeline. If we extend the timeline then we can detect the 0.5 point increase assuming we achieve the required sample size of `r format(ceiling(pw_05$n), big.mark = ",", scientific = FALSE)` per arm. If we want to stick to the month timeline, we need to give up being able to detect the 0.5 point increase, but should be able to detect a 1.0 point increase. So we must weight time constraints with reaching a detectable effect size.
 
 # Part 3 · Looking every day (20 points)
 
 ## (a) One look against ten
+```{r}
+
+set.seed(6101)
+looks <- seq(1000, 10000, by = 1000)
+
+sims <- replicate(2000, {
+  a <- convert(p_convert(rnorm(10000)))   
+  b <- convert(p_convert(rnorm(10000)))   
+  c(cumsum(a)[looks], cumsum(b)[looks])   
+})
+
+
+ka <- sims[1:10, ]    # cumulative conversions, arm a: rows = looks, cols = experiments
+kb <- sims[11:20, ]   # cumulative conversions, arm b
+
+p_mat <- sapply(1:2000, function(j)
+  sapply(1:10, function(i)
+    prop.test(c(ka[i, j], kb[i, j]), c(looks[i], looks[i]), correct = FALSE)$p.value))
+# 10 x 2000
+
+fp_end  <- mean(p_mat[10, ] < 0.05)
+fp_peek <- mean(apply(p_mat < 0.05, 2, any))
+fp_end
+fp_peek
+
+
+```
+
+Running the experiment through to the end gives the desired false positive rate of about 5%, specifically, `r fp_end`. Whereas terminating early give a false positive rate of `r fp_peek`.
+
 
 ## (b) When the false alarms happen, and a stricter threshold
+```{r}
+
+sig <- p_mat < 0.05               
+stopped <- apply(sig, 2, any)            # stopped experiments
+first_look <- apply(sig, 2, function(x) which(x)[1])   # NA if never significant
+
+mean(first_look[stopped] <= 3)           # share of stopped at looks 1-3
+
+# stricter threshold
+fp_005 <- mean(apply(p_mat < 0.005, 2, any))   # stop at first look with p < 0.005
+fp_005
+
+```
+
+Among the experiments stopped by the analyst, `r round(mean(first_look[stopped] <= 3), 3) ` of them were stopped within the first three times the analyst looked. Using a stricter threshold for experiments that were stopped, brings the false positive rate down to `r fp_005`.
+
 
 ## (c) Why, and the stopping rule
+Stopping the experiment early results in the most noise in the data, and a larger false positive rate (`r fp_peek`) from too small of a sample size. Even though having a stricter threshold brought the rate down (`r fp_005`), it's becomes increasingly harder for subsquent looks to actually pass which limits the power to detect a true positive. To maintain power at 80%, a larger sample size is needed for the stricter threshold.
+
 
 # Part 4 · Count before you compare (14 points)
 
