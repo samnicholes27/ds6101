@@ -9,9 +9,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="YOUR NAME" />
+<meta name="author" content="Sam Nicholes" />
 
-<meta name="date" content="2026-11-09" />
+<meta name="date" content="2026-11-10" />
 
 <title>Homework 5</title>
 
@@ -1569,8 +1569,8 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">Homework 5</h1>
 <h3 class="subtitle">DATS 6101 · Fall 2026</h3>
-<h4 class="author">YOUR NAME</h4>
-<h4 class="date">2026-11-09</h4>
+<h4 class="author">Sam Nicholes</h4>
+<h4 class="date">2026-11-10</h4>
 
 </div>
 
@@ -1808,51 +1808,234 @@ mod_split &lt;- prop.test(c(k1, k0), c(n1, n0), correct = FALSE)</code></pre>
 </div>
 <div id="b-two-thousand-broken-experiments" class="section level2">
 <h2>(b) Two thousand broken experiments</h2>
+<pre class="r"><code>set.seed(6101)
+
+res &lt;- replicate(2000, {
+  v &lt;- make_users(40000)                         # engagement
+  arm &lt;- sample(rep(0:1, each = nrow(v) / 2))    # arm
+  conv &lt;- convert(p_convert(v$engagement))       # conversion
+  lost &lt;- arm == 1 &amp; v$engagement &lt; -0.5 &amp; runif(nrow(v)) &lt; 0.30   # the loss
+
+  keep &lt;- !lost
+  n1 &lt;- sum(arm[keep] == 1); n0 &lt;- sum(arm[keep] == 0)
+  k1 &lt;- sum(conv[keep &amp; arm == 1]); k0 &lt;- sum(conv[keep &amp; arm == 0])
+
+  p_split &lt;- chisq.test(c(n0, n1), p = c(0.5, 0.5))$p.value
+  pt &lt;- prop.test(c(k1, k0), c(n1, n0), correct = FALSE)
+  c(p_split = p_split, diff = k1 / n1 - k0 / n0, p_comp = pt$p.value)
+})
+res &lt;- t(res)    # 2000 x 3
+
+mean(res[, &quot;p_split&quot;] &lt; 0.001)                               # share with split p &lt; 0.001</code></pre>
+<pre><code>## [1] 1</code></pre>
+<pre class="r"><code>mean(res[, &quot;diff&quot;] &gt; 0 &amp; res[, &quot;p_comp&quot;] &lt; 0.05)             # treatment ahead, p &lt; 0.05</code></pre>
+<pre><code>## [1] 0.373</code></pre>
+<pre class="r"><code>mean(res[, &quot;diff&quot;])                                          # mean difference</code></pre>
+<pre><code>## [1] 0.004106496</code></pre>
+<p>All 2000 experiments gave p &lt; 0.0001. The treatment lead in 0.373,
+with a mean difference of 0.0041065.</p>
 </div>
 <div id="c-rebalancing-and-what-to-do-instead" class="section level2">
 <h2>(c) Rebalancing, and what to do instead</h2>
+<pre class="r"><code># Single experiment from a
+set.seed(6101)
+v &lt;- make_users(40000)
+v$arm &lt;- sample(rep(0:1, each = nrow(v) / 2))
+v$converted &lt;- convert(p_convert(v$engagement))
+lost &lt;- v$arm == 1 &amp; v$engagement &lt; -0.5 &amp; runif(nrow(v)) &lt; 0.30
+logged &lt;- v[!lost, ]
+
+# Rebalance: drop control users at random until the arms are equal
+n_treat &lt;- sum(logged$arm == 1)
+ctrl_rows &lt;- which(logged$arm == 0)
+set.seed(6101)                                   # immediately before the sample()
+keep_ctrl &lt;- sample(ctrl_rows, n_treat)          # keep n_treat control users
+bal &lt;- logged[c(keep_ctrl, which(logged$arm == 1)), ]
+
+table(bal$arm)                                   # should now be equal</code></pre>
+<pre><code>## 
+##     0     1 
+## 18088 18088</code></pre>
+<pre class="r"><code>k1 &lt;- sum(bal$converted[bal$arm == 1]); n1 &lt;- sum(bal$arm == 1)
+k0 &lt;- sum(bal$converted[bal$arm == 0]); n0 &lt;- sum(bal$arm == 0)
+k1 / n1 </code></pre>
+<pre><code>## [1] 0.06512605</code></pre>
+<pre class="r"><code>k0 / n0</code></pre>
+<pre><code>## [1] 0.06186422</code></pre>
+<pre class="r"><code>k1 / n1 - k0 / n0</code></pre>
+<pre><code>## [1] 0.003261831</code></pre>
+<pre class="r"><code>prop.test(c(k1, k0), c(n1, n0), correct = FALSE)</code></pre>
+<pre><code>## 
+##  2-sample test for equality of proportions without continuity correction
+## 
+## data:  c(k1, k0) out of c(n1, n0)
+## X-squared = 1.6182, df = 1, p-value = 0.2033
+## alternative hypothesis: two.sided
+## 95 percent confidence interval:
+##  -0.001763716  0.008287378
+## sample estimates:
+##     prop 1     prop 2 
+## 0.06512605 0.06186422</code></pre>
+<p>In A, the comparison was not based on users randomized, then the loss
+removed low-engagement users from the treatment only so the arms
+differed before the added feature is actually implemented. For 2000
+replicates, the mean difference was 0.0041065 percentage points and
+treatment came out ahead in 37.3% experiments. Even after dropping
+control users, the difference was 0.0032618 percentage points with the
+treatment arm missing low-engagement users, so rebalancing did nothing.
+Stopping after seeing a split test and not reporting the conversion
+comparison would be my recommendation, and then make sure the assignment
+is recorded and rerun the experiment.</p>
 </div>
 </div>
 <div id="part-5-randomize-users-count-sessions-16-points" class="section level1">
 <h1>Part 5 · Randomize users, count sessions (16 points)</h1>
+<pre class="r"><code>z    &lt;- rnorm(2000)
+arm  &lt;- rep(0:1, each = 1000)
+k    &lt;- 1 + rpois(2000, 5)          # sessions per user
+pu   &lt;- plogis(-2 + z)              # each user&#39;s own chance per session
+conv &lt;- rbinom(2000, k, pu)         # converting sessions per user</code></pre>
 <div id="a-sessions-as-the-unit" class="section level2">
 <h2>(a) Sessions as the unit</h2>
+<pre class="r"><code>set.seed(6101)
+
+p_sess &lt;- replicate(2000, {
+  z    &lt;- rnorm(2000)
+  arm  &lt;- rep(0:1, each = 1000)
+  k    &lt;- 1 + rpois(2000, 5)
+  pu   &lt;- plogis(-2 + z)
+  conv &lt;- rbinom(2000, k, pu)
+
+  k1 &lt;- sum(conv[arm == 1]); n1 &lt;- sum(k[arm == 1])   # converting sessions / sessions, treatment
+  k0 &lt;- sum(conv[arm == 0]); n0 &lt;- sum(k[arm == 0])   # control
+  prop.test(c(k1, k0), c(n1, n0), correct = FALSE)$p.value
+})
+
+mean(p_sess &lt; 0.05)    # false-positive rate</code></pre>
+<pre><code>## [1] 0.1255</code></pre>
+<p>False positive rate: 0.1255 Sessions from the same user are
+correlated, but assumed to be independent, thus the large false-positive
+rate.</p>
 </div>
 <div id="b-users-as-the-unit" class="section level2">
 <h2>(b) Users as the unit</h2>
+<pre class="r"><code>set.seed(6101)
+
+p_both &lt;- replicate(2000, {
+  z    &lt;- rnorm(2000)
+  arm  &lt;- rep(0:1, each = 1000)
+  k    &lt;- 1 + rpois(2000, 5)
+  pu   &lt;- plogis(-2 + z)
+  conv &lt;- rbinom(2000, k, pu)
+
+  # (a) session level
+  k1 &lt;- sum(conv[arm == 1]); n1 &lt;- sum(k[arm == 1])
+  k0 &lt;- sum(conv[arm == 0]); n0 &lt;- sum(k[arm == 0])
+  p_a &lt;- prop.test(c(k1, k0), c(n1, n0), correct = FALSE)$p.value
+
+  # (b) user level: each user&#39;s conversion rate
+  rate &lt;- conv / k
+  p_b &lt;- t.test(rate[arm == 1], rate[arm == 0])$p.value
+
+  c(p_a, p_b)
+})
+
+mean(p_both[1, ] &lt; 0.05)   # (a) should reproduce 0.1255</code></pre>
+<pre><code>## [1] 0.1255</code></pre>
+<pre class="r"><code>mean(p_both[2, ] &lt; 0.05)   # (b) user-level false-positive rate</code></pre>
+<pre><code>## [1] 0.047</code></pre>
+<p>False-positive rate: 0.047 Randomizing users brought the false
+positive rate down to the desired 0.05 level as intended by design.</p>
 </div>
 <div id="c-which-step-failed" class="section level2">
 <h2>(c) Which step failed</h2>
+<p>Step 2 failed as the observations were not independent, but
+correlated. When randomizing the correct unit, the user, making the
+observations independent. It brought the false positive rate down to be
+aligned with the assumption of independence and the 0.05 rate (0.047).
+Previously, the draw was not a random sample of flights but of days (16
+flights per day), which violates independence. The same solution applies
+here with appropriately randomizing the unit of interest, the user.</p>
 </div>
 </div>
 <div id="part-6-the-report-12-points" class="section level1">
 <h1>Part 6 · The report (12 points)</h1>
+<pre class="r"><code>set.seed(6101)
+
+n &lt;- ceiling(pw_05$n)      # 37,426 per arm
+
+z    &lt;- rnorm(2 * n)
+arm  &lt;- rep(0:1, each = n)
+conv &lt;- convert(p_convert(z, treated = arm, lift = 0.003))</code></pre>
 <div id="a-one-experiment" class="section level2">
 <h2>(a) One experiment</h2>
+<pre class="r"><code>k1 &lt;- sum(conv[arm == 1]); n1 &lt;- sum(arm == 1)
+k0 &lt;- sum(conv[arm == 0]); n0 &lt;- sum(arm == 0)
+
+k1 / n1                    # treatment rate</code></pre>
+<pre><code>## [1] 0.06479453</code></pre>
+<pre class="r"><code>k0 / n0                    # control rate</code></pre>
+<pre><code>## [1] 0.06246994</code></pre>
+<pre class="r"><code>k1 / n1 - k0 / n0          # difference, treatment minus control</code></pre>
+<pre><code>## [1] 0.002324587</code></pre>
+<pre class="r"><code>pt &lt;- prop.test(c(k1, k0), c(n1, n0), correct = FALSE)
+pt$conf.int                # 95% interval for the difference</code></pre>
+<pre><code>## [1] -0.001172716  0.005821890
+## attr(,&quot;conf.level&quot;)
+## [1] 0.95</code></pre>
+<pre class="r"><code>pt$p.value</code></pre>
+<pre><code>## [1] 0.1926656</code></pre>
+<p>Treatment rate: 0.065</p>
+<p>Control rate: 0.062</p>
+<p>Difference: 0.002</p>
+<p>95% interval: -0.001, 0.006</p>
+<p>p-value: 0.193</p>
 </div>
 <div id="b-the-sentence-and-two-that-are-wrong" class="section level2">
 <h2>(b) The sentence, and two that are wrong</h2>
+<pre class="r"><code>rate1  &lt;- k1 / n1                          # treatment rate
+rate0  &lt;- k0 / n0                          # control rate
+diff   &lt;- rate1 - rate0                    # treatment minus control
+ci     &lt;- pt$conf.int                      # interval for the difference
+pval   &lt;- pt$p.value
+thresh &lt;- 0.005                            # product manager&#39;s threshold
+
+pp &lt;- function(x, d = 2) formatC(x * 100, format = &quot;f&quot;, digits = d)   # proportion -&gt; percentage points
+fmt_p &lt;- function(p) if (p &lt; 0.001) &quot;&lt; 0.001&quot; else formatC(p, format = &quot;f&quot;, digits = 2)
+
+# power of this design for the true 0.3-point lift
+pw_lift &lt;- power.prop.test(n = n, p1 = p0, p2 = p0 + 0.003, sig.level = 0.05)$power</code></pre>
+<p>In a test involving 37,426 users in each group, the feature increased
+the estimated conversion rate by 0.23 percentage points (6.48% compared
+with 6.25%). However, the 95% confidence interval ranges from -0.12 to
++0.58 percentage points (p ≈ 0.19). This means the results are
+compatible with both no effect and a positive effect exceeding the
+0.5-percentage-point threshold. Therefore, the test does not provide
+enough evidence to determine whether the feature meets the desired
+threshold.</p>
+<ol style="list-style-type: decimal">
+<li><p>“The feature has no effect because the result was not
+statistically significant (p = 0.19).” This conclusion is incorrect. A
+p-value greater than 0.05 does not demonstrate that the feature has no
+effect; it simply means the results do not provide sufficient evidence
+to rule out zero effect. Furthermore, the confidence interval extends to
++0.58 percentage points, meaning an improvement greater than the
+0.5-point threshold remains plausible.</p></li>
+<li><p>“There is a 95% probability that the true effect is between -0.12
+and +0.58 percentage points.” This interpretation is also incorrect. The
+true effect is a fixed value, not a probability distribution. The 95%
+confidence level refers to the long-run reliability of the method: if we
+repeated the experiment many times, approximately 95% of the confidence
+intervals constructed using this method would contain the true
+effect.</p></li>
+</ol>
 </div>
 </div>
 <div id="ai-disclosure" class="section level1">
 <h1>AI disclosure</h1>
-<!--
-Keep ONE of the two blocks below and delete the other.
-"I did not use an AI assistant" is always acceptable and earns full marks.
--->
 <div id="prompt-log" class="section level2">
 <h2>Prompt log</h2>
-</div>
-<div id="critique" class="section level2">
-<h2>Critique</h2>
-<p><em>150-300 words. Either name something the assistant got wrong and
-what it would have cost, or show the prompts you used trying to break it
-when it held up. Both earn full marks.</em></p>
-<!-- OR, replacing both sections above:
-
-I did not use an AI assistant on this assignment.
-
--->
+<p><a href="https://claude.ai/share/c2629443-f5a4-4b15-9187-3daee39cb36a" class="uri">https://claude.ai/share/c2629443-f5a4-4b15-9187-3daee39cb36a</a></p>
 </div>
 </div>
 
