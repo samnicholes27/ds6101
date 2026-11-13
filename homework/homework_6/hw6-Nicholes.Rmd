@@ -12,6 +12,9 @@ output:
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+library(car)
+
 ```
 
 ```{r data}
@@ -87,6 +90,32 @@ Holding covariates constant means to hold the values for those covariates consta
 # Part 2 · Two predictors that move together (16 points)
 
 ## (2a) The correlation and the VIFs
+```{r}
+
+cor_pop <- cor(x = life$pop15, y = life$pop75)
+cor_pop
+plot(life$pop15, life$pop75)
+
+vif_values <- vif(full)
+vif_values
+
+vif_rsq <- 1 - (1/vif_values)
+vif_rsq * 100
+
+```
+The correlation between `pop15` and `pop75` is `r round(cor_pop, 3)`.
+
+VIFs for each covariate:
+
+- `pop15`: `r round(vif_values[1], 3)`
+
+- `pop75`: `r round(vif_values[2], 3)`
+
+- `dpi`: `r round(vif_values[3], 3)`
+
+- `ddpi`: `r round(vif_values[4], 3)`
+
+
 
 ## (2b) Without pop75
 
