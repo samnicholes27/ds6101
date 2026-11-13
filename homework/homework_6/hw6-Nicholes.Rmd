@@ -71,6 +71,8 @@ a1_coeff <- full$coefficients["pop15"]
 a1_se <- summary(full)$coefficients["pop15", "Std. Error"]
 a1_ci <- confint(full, "pop15")
 a1_pval <- summary(full)$coefficients["pop15", "Pr(>|t|)"]
+a1_rsq <- summary(full)$r.sq
+a1_rse <- sigma(full)
 ```
 The coefficient for `pop15` is `r round(a1_coeff, 3)`. One percentage unit increase in `pop15` for a given country is associated with  a decrease of `r abs(round(a1_coeff, 3))` percentage points in saving rate, holding `pop75`, `dpi`, and `ddpi` constant. The SE for `pop15` is `r round(a1_se, 3)`, with a 95% CI of `r round(a1_ci, 3)`, and p-value of `r round(a1_pval, 3)`; indicating that the coefficient is significant.
 
@@ -126,16 +128,27 @@ b2_coeff <- full_mod2$coefficients["pop15"]
 b2_se <- summary(full_mod2)$coefficients["pop15", "Std. Error"]
 b2_ci <- confint(full_mod2, "pop15")
 b2_pval <- summary(full_mod2)$coefficients["pop15", "Pr(>|t|)"]
-b2_rsq <- full_mod2
-
-
+b2_rsq <- summary(full_mod2)$r.sq
+b2_rse <- sigma(full_mod2)
 
 ```
+
+| **Statistic** | **Model 1** | **Model 2** |
+|---|:---:|:---:|
+| Coefficient | `r round(a1_coeff, 3)` | `r round(b2_coeff, 3)` |
+| Std Error | `r round(a1_se, 3)` | `r round(b2_se, 3)` |
+| 95% CI | `r paste(round(a1_ci, 3), collapse = ", ")` | `r paste(round(b2_ci, 3), collapse = ", ")` |
+| P-Value | `r round(a1_pval, 3)` | `r round(b2_pval, 3)` |
+| R-Squared | `r round(a1_rsq, 3)` | `r round(b2_rsq, 3)` |
+| RSE | `r round(a1_rse, 3)` | `r round(b2_rse, 3)` |
 
 
 ## (2c) Which coefficient, and what collinearity did
 
 # Part 3 · One country (16 points)
+
+
+
 
 ## (3a) Leverage and Cook's distance
 

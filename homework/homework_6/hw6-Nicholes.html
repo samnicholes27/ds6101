@@ -1642,7 +1642,9 @@ summary(full)</code></pre>
 <pre class="r"><code>a1_coeff &lt;- full$coefficients[&quot;pop15&quot;]
 a1_se &lt;- summary(full)$coefficients[&quot;pop15&quot;, &quot;Std. Error&quot;]
 a1_ci &lt;- confint(full, &quot;pop15&quot;)
-a1_pval &lt;- summary(full)$coefficients[&quot;pop15&quot;, &quot;Pr(&gt;|t|)&quot;]</code></pre>
+a1_pval &lt;- summary(full)$coefficients[&quot;pop15&quot;, &quot;Pr(&gt;|t|)&quot;]
+a1_rsq &lt;- summary(full)$r.sq
+a1_rse &lt;- sigma(full)</code></pre>
 <p>The coefficient for <code>pop15</code> is -0.461. One percentage unit
 increase in <code>pop15</code> for a given country is associated with a
 decrease of 0.461 percentage points in saving rate, holding
@@ -1706,6 +1708,76 @@ vif_rsq * 100</code></pre>
 </div>
 <div id="b-without-pop75" class="section level2">
 <h2>(2b) Without pop75</h2>
+<pre class="r"><code>full_mod2 &lt;- lm(sr ~ pop15 + dpi + ddpi, data = LifeCycleSavings)
+summary(full_mod2)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = sr ~ pop15 + dpi + ddpi, data = LifeCycleSavings)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -7.6889 -2.8813  0.0296  1.7989 10.4330 
+## 
+## Coefficients:
+##               Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) 19.2771687  4.3888974   4.392 6.53e-05 ***
+## pop15       -0.2883861  0.0945354  -3.051  0.00378 ** 
+## dpi         -0.0008704  0.0008795  -0.990  0.32755    
+## ddpi         0.3929355  0.1989390   1.975  0.05427 .  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 3.862 on 46 degrees of freedom
+## Multiple R-squared:  0.3026, Adjusted R-squared:  0.2572 
+## F-statistic: 6.654 on 3 and 46 DF,  p-value: 0.0007941</code></pre>
+<pre class="r"><code># Stats from model 2
+b2_coeff &lt;- full_mod2$coefficients[&quot;pop15&quot;]
+b2_se &lt;- summary(full_mod2)$coefficients[&quot;pop15&quot;, &quot;Std. Error&quot;]
+b2_ci &lt;- confint(full_mod2, &quot;pop15&quot;)
+b2_pval &lt;- summary(full_mod2)$coefficients[&quot;pop15&quot;, &quot;Pr(&gt;|t|)&quot;]
+b2_rsq &lt;- summary(full_mod2)$r.sq
+b2_rse &lt;- sigma(full_mod2)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th><strong>Statistic</strong></th>
+<th align="center"><strong>Model 1</strong></th>
+<th align="center"><strong>Model 2</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Coefficient</td>
+<td align="center">-0.461</td>
+<td align="center">-0.288</td>
+</tr>
+<tr class="even">
+<td>Std Error</td>
+<td align="center">0.145</td>
+<td align="center">0.095</td>
+</tr>
+<tr class="odd">
+<td>95% CI</td>
+<td align="center">-0.753, -0.17</td>
+<td align="center">-0.479, -0.098</td>
+</tr>
+<tr class="even">
+<td>P-Value</td>
+<td align="center">0.003</td>
+<td align="center">0.004</td>
+</tr>
+<tr class="odd">
+<td>R-Squared</td>
+<td align="center">0.338</td>
+<td align="center">0.303</td>
+</tr>
+<tr class="even">
+<td>RSE</td>
+<td align="center">3.803</td>
+<td align="center">3.862</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="c-which-coefficient-and-what-collinearity-did" class="section level2">
 <h2>(2c) Which coefficient, and what collinearity did</h2>
