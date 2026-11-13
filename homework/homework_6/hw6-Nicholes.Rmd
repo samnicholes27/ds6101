@@ -116,8 +116,22 @@ VIFs for each covariate:
 - `ddpi`: `r round(vif_values[4], 3)`
 
 
-
 ## (2b) Without pop75
+```{r}
+full_mod2 <- lm(sr ~ pop15 + dpi + ddpi, data = LifeCycleSavings)
+summary(full_mod2)
+
+# Stats from model 2
+b2_coeff <- full_mod2$coefficients["pop15"]
+b2_se <- summary(full_mod2)$coefficients["pop15", "Std. Error"]
+b2_ci <- confint(full_mod2, "pop15")
+b2_pval <- summary(full_mod2)$coefficients["pop15", "Pr(>|t|)"]
+b2_rsq <- full_mod2
+
+
+
+```
+
 
 ## (2c) Which coefficient, and what collinearity did
 
