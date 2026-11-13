@@ -1,0 +1,144 @@
+---
+title: "Homework 6"
+subtitle: "DATS 6101 · Fall 2026"
+author: "YOUR NAME"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r data}
+# Fifty countries, each variable averaged over 1960 to 1970.
+life <- LifeCycleSavings
+
+# Body weight (kg) and brain weight (g) for 62 species.
+data(mammals, package = "MASS")
+
+
+# The spread ratio: residual SD in the top third of fitted values --------------
+# over the bottom third. Near 1 means the spread is even.
+spread_ratio <- function(m) {
+  third <- cut(fitted(m), quantile(fitted(m), 0:3 / 3), include.lowest = TRUE)
+  s <- tapply(resid(m), third, sd)
+  s[[3]] / s[[1]]
+}
+
+# Output -----------------------------------------------------------------------
+# ≈ 1	Residual spread is similar across the range of predictions, consistent with constant variance
+# > 1	Spread grows as predictions grow (the classic “fan” or “funnel” shape in a residuals-vs-fitted plot)
+# < 1	Spread shrinks as predictions grow (a reversed funnel)
+
+
+```
+
+<!--
+The definitions are on the assignment page, and your numbers are checked against
+them, so use them exactly:
+
+  coefficient     estimate, SE and p-value from summary(); 95% interval from confint()
+  VIF             1 / (1 - R^2) from regressing the predictor on the OTHER predictors
+  change in SEs   (new estimate - old estimate) / old standard error
+  simulation      set.seed(6101) on the line before it, draws in the order given,
+                  2,000 repetitions
+
+Before you submit: Session > Restart R, then Knit. Every number you state in
+prose must come from inline R code, like this: `r nrow(life)` countries.
+-->
+
+# Part 1 · Reading a model with four predictors (14 points)
+
+### Model
+Savings Rate is regressed onto % of population under 15; % of population over 75; disposable income per person; and growth rate
+
+```{r}
+full <- lm(sr ~ pop15 + pop75 + dpi + ddpi, data = LifeCycleSavings)
+summary(full)
+```
+
+## (1a) The coefficient on pop15
+```{r}
+a1_coeff <- full$coefficients["pop15"]
+a1_se <- summary(full)$coefficients["pop15", "Std. Error"]
+a1_ci <- confint(full, "pop15")
+a1_pval <- summary(full)$coefficients["pop15", "Pr(>|t|)"]
+```
+The coefficient for `pop15` is `r round(a1_coeff, 3)`. One percentage unit increase in `pop15` for a given country is associated with  a decrease of `r abs(round(a1_coeff, 3))` percentage points in saving rate, holding `pop75`, `dpi`, and `ddpi` constant. The SE for `pop15` is `r round(a1_se, 3)`, with a 95% CI of `r round(a1_ci, 3)`, and p-value of `r round(a1_pval, 3)`; indicating that the coefficient is significant.
+
+## (1b) The coefficient on pop75
+```{r}
+b1_coeff <- full$coefficients["pop75"]
+b1_se <- summary(full)$coefficients["pop75", "Std. Error"]
+b1_ci <- confint(full, "pop75")
+b1_pval <- summary(full)$coefficients["pop75", "Pr(>|t|)"]
+```
+The coefficient for `pop75` is `r round(b1_coeff, 3)` (CI: `r round(b1_ci, 3)`, p = `r round(b1_pval, 3)`) holding all other covariates constant. Any association between `pop75` and savings rate is not significant for this data. Since it has a large CI whose range is negative to positive, it cannot reliably tell us the direction of the association. At the very least, a positive association will not be large.
+
+## (1c) What "holding constant" means here
+Holding covariates constant means to hold the values for those covariates constant in the model while allowing a given predictor to vary to determine its association with the outcome and provide an estimate coefficient. It does not describe a comparison among countries, but that for a given country the estimate can be observed given the data.
+"A percentage point increase in `pop15` results in a `r abs(round(a1_coeff, 3))` percentage point decrease in savings rate." A causal sentence like this is not supported by the data as the study design is observational only.
+
+# Part 2 · Two predictors that move together (16 points)
+
+## (2a) The correlation and the VIFs
+
+## (2b) Without pop75
+
+## (2c) Which coefficient, and what collinearity did
+
+# Part 3 · One country (16 points)
+
+## (3a) Leverage and Cook's distance
+
+## (3b) Without Libya
+
+## (3c) Why the rules and the refit disagree
+
+# Part 4 · Brains and bodies (16 points)
+
+## (4a) The raw scale
+
+## (4b) The log-log scale
+
+## (4c) Reading the slope
+
+# Part 5 · The variable you left out (16 points)
+
+## (5a) The average estimates
+
+## (5b) Coverage
+
+## (5c) Where the error comes from
+
+# Part 6 · The report (12 points)
+
+## (6a) The sentence about ddpi
+
+## (6b) Two sentences that are wrong
+
+# AI disclosure
+
+<!--
+Keep ONE of the two blocks below and delete the other.
+"I did not use an AI assistant" is always acceptable and earns full marks.
+-->
+
+## Prompt log
+
+## Critique
+
+*150-300 words. Either name something the assistant got wrong and what it would
+have cost, or show the prompts you used trying to break it when it held up.
+Both earn full marks.*
+
+<!-- OR, replacing both sections above:
+
+I did not use an AI assistant on this assignment.
+
+-->

@@ -1,0 +1,112 @@
+---
+title: "Homework 6"
+subtitle: "DATS 6101 · Fall 2026"
+author: "YOUR NAME"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r data}
+# Fifty countries, each variable averaged over 1960 to 1970.
+life <- LifeCycleSavings
+
+# Body weight (kg) and brain weight (g) for 62 species.
+data(mammals, package = "MASS")
+
+# The spread ratio: residual SD in the top third of fitted values
+# over the bottom third. Near 1 means the spread is even.
+spread_ratio <- function(m) {
+  third <- cut(fitted(m), quantile(fitted(m), 0:3 / 3), include.lowest = TRUE)
+  s <- tapply(resid(m), third, sd)
+  s[[3]] / s[[1]]
+}
+```
+
+<!--
+The definitions are on the assignment page, and your numbers are checked against
+them, so use them exactly:
+
+  coefficient     estimate, SE and p-value from summary(); 95% interval from confint()
+  VIF             1 / (1 - R^2) from regressing the predictor on the OTHER predictors
+  change in SEs   (new estimate - old estimate) / old standard error
+  simulation      set.seed(6101) on the line before it, draws in the order given,
+                  2,000 repetitions
+
+Before you submit: Session > Restart R, then Knit. Every number you state in
+prose must come from inline R code, like this: `r nrow(life)` countries.
+-->
+
+# Part 1 · Reading a model with four predictors (14 points)
+
+## (a) The coefficient on pop15
+
+## (b) The coefficient on pop75
+
+## (c) What "holding constant" means here
+
+# Part 2 · Two predictors that move together (16 points)
+
+## (a) The correlation and the VIFs
+
+## (b) Without pop75
+
+## (c) Which coefficient, and what collinearity did
+
+# Part 3 · One country (16 points)
+
+## (a) Leverage and Cook's distance
+
+## (b) Without Libya
+
+## (c) Why the rules and the refit disagree
+
+# Part 4 · Brains and bodies (16 points)
+
+## (a) The raw scale
+
+## (b) The log-log scale
+
+## (c) Reading the slope
+
+# Part 5 · The variable you left out (16 points)
+
+## (a) The average estimates
+
+## (b) Coverage
+
+## (c) Where the error comes from
+
+# Part 6 · The report (12 points)
+
+## (a) The sentence about ddpi
+
+## (b) Two sentences that are wrong
+
+# AI disclosure
+
+<!--
+Keep ONE of the two blocks below and delete the other.
+"I did not use an AI assistant" is always acceptable and earns full marks.
+-->
+
+## Prompt log
+
+## Critique
+
+*150-300 words. Either name something the assistant got wrong and what it would
+have cost, or show the prompts you used trying to break it when it held up.
+Both earn full marks.*
+
+<!-- OR, replacing both sections above:
+
+I did not use an AI assistant on this assignment.
+
+-->

@@ -1,0 +1,155 @@
+---
+title: "Resampling - Intro"
+author: "Sam Nicholes"
+date: "2026-11-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Question**: do manual-transmission cars get better mileage than automatics, and by how much?
+```{r}
+auto <- mtcars$mpg[mtcars$am == 0]   # automatic
+man  <- mtcars$mpg[mtcars$am == 1]   # manual
+
+obs_diff <- median(man) - median(auto)
+obs_diff
+```
+We do a calculation based on the original sample data set and get a difference of `r obs_diff`.
+
+**Problem**: We aren't able to collect more data, so we use our existing data to simulate being able to collect more data to see how our calculated statistic changes.
+
+**Solution**: We perform replicates of sampling our data, allowing an observation to be sampled again (replace = TRUE). This generates a distribution from which we can calculate the statistic and how it varies across replicated samples in terms of SE and CI.
+
+```{r}
+set.seed(1)
+boot_diff <- replicate(10000, {
+  median(sample(man,  replace = TRUE)) -
+  median(sample(auto, replace = TRUE))
+})
+
+
+se <- sd(boot_diff) # bootstrap SE of the difference
+ci <- quantile(boot_diff, c(0.025, 0.975)) # 95% percentile interval
+
+hist(boot_diff, breaks = 40,
+     main = "Bootstrap distribution of difference in median mpg",
+     xlab = "Median(manual) - Median(automatic)")
+
+abline(v = obs_diff, col = "red", lwd = 2)             # observed difference
+abline(v = 0, lty = 2, lwd = 3)                                  # "no difference"
+abline(v = obs_diff + c(-1, 1) * se, col = "blue", lwd = 2, lty = 3)  # ± 1 SE
+abline(v = ci, col = "darkgreen", lwd = 2)              # 95% percentile CI
+
+legend("topright", bty = "n", lwd = 2,
+       col = c("red", "black", "blue", "darkgreen"),
+       lty = c(1, 2, 3, 1),
+       legend = c("Observed", "Zero", "± 1 SE", "95% CI"))
+
+```
+
+
+- **Standard Error**: The bootstrap standard error is the standard deviation of the statistic across the resamples. It measures how much your estimate typically varies from one sample to the next, in the same units as the statistic, a measure of how precisely the data pin down the estimate.
+
+- **Confidence Interval**: A 95% bootstrap CI is the range that holds the middle 95% of the statistic’s values across resamples of your data. It tells you how much your estimate would plausibly vary if the study were repeated with a new sample from the same population.
+
+
+**Why resample?**: Our sample is the only evidence you have about the population, so its distribution is the best available stand-in for the population’s distribution, and it gets closer to the truth as the sample gets larger. Because of that, the variation you see across resamples approximates the variation you would see across genuinely new samples. The bootstrap only works if your sample is a good miniature of the population. Every limit of the method is a way that this can fail.
+
+Every SE and CI is a summary of the distribution of a statistic across all the samples you could have drawn (SE is its spread, CI its middle 95%).
+
+
+## Two Potential Failures of the Original Sample
+These failures can carry over into bootstrapping.
+
+**Failure 1 - Small N**
+
+With few observations, your sample is a rough, incomplete picture of the population. It may miss the tails, the shape, or entire regions of values. Resampling from it can only reuse what it contains, so the bootstrap distribution inherits those gaps. With n = 8, the sample median and the interval can land far from the truth, and the interval can be misleadingly narrow. With n = 200, the sample resembles the population, so the resampling behaves like real sampling. Larger n means a better stand-in, which means a more trustworthy bootstrap.
+
+```{r}
+set.seed(1)
+pop <- rlnorm(100000, 0, 1.4)        # skewed population; true median = 1
+small <- sample(pop, 8)
+large <- sample(pop, 200)
+
+for (x in list(small, large)) {
+  boot <- replicate(5000, median(sample(x, replace = TRUE)))
+  ci <- quantile(boot, c(.025, .975))
+  print(round(c(n          = length(x),
+                median     = median(x),
+                ci_lower   = unname(ci[1]),
+                ci_upper   = unname(ci[2]),
+                ci_width   = unname(ci[2] - ci[1]),
+                true_median = 1), 2))
+}
+
+```
+
+With few observations, your sample is a rough, incomplete picture of the population (it may miss the tails and the true shape). Every resample reuses only those few values, so the bootstrap inherits that incomplete picture. This can be mitigated by having a large sample size to begin with.
+
+
+**Failure 2 - biased sample (a stand-in for the wrong population)**
+
+Here the problem isn’t size, it’s which population your sample actually represents. If only high scorers volunteered, your sample is a faithful picture of “high scorers who volunteer,” not of “everyone.” The bootstrap faithfully reproduces the variability of that wrong population, so you get a precise answer to the wrong question.
+
+```{r}
+set.seed(1)
+population <- rnorm(50000, 100, 15) # true mean of 100 and sd of 15
+survey <- sample(population[population > 108], 60)   # sampled from only high scorers
+
+c(mean_population = mean(population),
+  mean_sample = mean(survey))                        # ~117, not 100
+```
+
+
+```{r}
+set.seed(1)
+population <- rnorm(50000, 100, 15)                  # true mean = 100
+survey <- sample(population[population > 108], 60)   # only high scorers
+
+# Bootstrap the mean of the survey
+boot <- replicate(10000, mean(sample(survey, length(survey), replace = TRUE)))
+
+obs <- mean(survey)
+se  <- sd(boot)
+ci  <- quantile(boot, c(0.025, 0.975))
+
+c(true_mean = mean(population), 
+  sample_mean = obs, 
+  boot_SE = se,
+  boot_ci = ci)
+
+
+hist(boot, breaks = 40, main = "Bootstrap distribution of the survey mean",
+     xlab = "Mean of resample")
+abline(v = obs, col = "red", lwd = 2)                 # observed survey mean
+abline(v = 100, col = "black", lwd = 2, lty = 2)      # TRUE population mean
+abline(v = ci, col = "darkgreen", lwd = 2)            # bootstrap 95% CI
+legend("topright", bty = "n", lwd = 2, lty = c(1, 2, 1),
+       col = c("red", "black", "darkgreen"),
+       legend = c("Survey mean", "True mean (100)", "95% CI"))
+```
+
+**Bias carries over into the bootstrap**
+
+The bootstrap only resamples the data you already have, so if your sample is biased, every resample is biased in the same way. It can measure random variation in your estimate, but it cannot detect or fix bias.
+
+Example: a survey of only high scorers gave a mean of about 117 when the true mean was 100. The bootstrap interval was narrow (about 115 to 119) and missed 100 entirely.
+
+A narrow interval means your estimate is stable, not that it is correct.
+
+
+
+## Coverage 
+
+Coverage is how often a study's method’s intervals contain the truth; to check it, simulate from a known population, repeat many times, and compare the proportion to the claimed 95%. Is coverage under or at 95%?
+
+Draw backs are that data from a known population is not available and can't be simulated.
+
+
+
+
+
+
