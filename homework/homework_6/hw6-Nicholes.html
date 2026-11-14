@@ -11,7 +11,7 @@
 
 <meta name="author" content="YOUR NAME" />
 
-<meta name="date" content="2026-11-13" />
+<meta name="date" content="2026-11-14" />
 
 <title>Homework 6</title>
 
@@ -1570,7 +1570,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Homework 6</h1>
 <h3 class="subtitle">DATS 6101 · Fall 2026</h3>
 <h4 class="author">YOUR NAME</h4>
-<h4 class="date">2026-11-13</h4>
+<h4 class="date">2026-11-14</h4>
 
 </div>
 
@@ -1778,18 +1778,113 @@ b2_rse &lt;- sigma(full_mod2)</code></pre>
 </tr>
 </tbody>
 </table>
+<p>Model 1 has <code>pop75</code>. Model 2 does not have
+<code>pop75</code>.</p>
 </div>
 <div id="c-which-coefficient-and-what-collinearity-did" class="section level2">
 <h2>(2c) Which coefficient, and what collinearity did</h2>
+<p>The coefficient for <code>pop15</code> in model 1 adjusts for
+<code>pop75</code> by holding it at a constant value across values of
+<code>pop15</code>. In model 2, <code>pop75</code> was dropped from the
+model and so the coefficient for <code>pop15</code> is not accounting
+for <code>pop75</code>’s influence in the model. Additionally, since
+<code>pop15</code> and <code>pop75</code> were strongly, negatively
+correlated, resulting in multicollinearity, <code>pop15</code> has a
+larger SE in model 1 than in model 2. The model was unable to determine
+how <code>pop15</code> and <code>pop75</code> were uniquely contributing
+to the explainable variance in savings rates. Dropping
+<code>pop75</code> only affects the SE of <code>pop15</code>, but not
+the overall fit of the model since R-squared and RSE do no meaningfully
+differ between the two models. I would report model 2 as the SE for
+<code>pop15</code> is smaller, showing better precision.</p>
 </div>
 </div>
 <div id="part-3-one-country-16-points" class="section level1">
 <h1>Part 3 · One country (16 points)</h1>
 <div id="a-leverage-and-cooks-distance" class="section level2">
 <h2>(3a) Leverage and Cook’s distance</h2>
+<pre class="r"><code># Country that exceeds 2p/n
+h &lt;- hatvalues(full)
+p &lt;- length(coef(full))
+n &lt;- nobs(full)
+cutoff &lt;- 2 * p / n
+h[h &gt; cutoff]</code></pre>
+<pre><code>##       Ireland         Japan United States         Libya 
+##     0.2122363     0.2233099     0.3336880     0.5314568</code></pre>
+<pre class="r"><code>p_exceed &lt;- sort(h[h &gt; cutoff], decreasing = TRUE)
+p_exceed  </code></pre>
+<pre><code>##         Libya United States         Japan       Ireland 
+##     0.5314568     0.3336880     0.2233099     0.2122363</code></pre>
+<pre class="r"><code># Cooks distance
+d &lt;- cooks.distance(full)
+d_largest &lt;- sort(d, decreasing = TRUE)[1:3]
+any(d &gt; 1)</code></pre>
+<pre><code>## [1] FALSE</code></pre>
+<pre class="r"><code>max(d)</code></pre>
+<pre><code>## [1] 0.2680704</code></pre>
+<pre class="r"><code>d_largest</code></pre>
+<pre><code>##      Libya      Japan     Zambia 
+## 0.26807042 0.14281625 0.09663275</code></pre>
+<p>The countries that exceed 2p/n are Libya, United States, Japan,
+Ireland with values of 0.531, 0.334, 0.223, 0.212, respectively.</p>
+<p>The countries with the largest cooks distances are: Libya, Japan,
+Zambia, with distances of 0.268, 0.143, 0.097, respectively; none of
+which exceed 1.</p>
 </div>
 <div id="b-without-libya" class="section level2">
 <h2>(3b) Without Libya</h2>
+<pre class="r"><code>no_libya &lt;- update(full, subset = rownames(LifeCycleSavings) != &quot;Libya&quot;) # Refit without Libya
+
+a &lt;- coef(summary(full))[&quot;ddpi&quot;, ] # coefficient of ddpi of model with Libya
+b &lt;- coef(summary(no_libya))[&quot;ddpi&quot;, ] # coefficient of ddpi of model without Libya
+
+
+cmp &lt;- rbind(full = a, no_libya = b)[, c(&quot;Estimate&quot;, &quot;Std. Error&quot;, &quot;Pr(&gt;|t|)&quot;)]
+round(cmp, 4)</code></pre>
+<pre><code>##          Estimate Std. Error Pr(&gt;|t|)
+## full       0.4097     0.1962   0.0425
+## no_libya   0.6103     0.2688   0.0281</code></pre>
+<pre class="r"><code>se_full &lt;- a[&quot;Std. Error&quot;]
+se_nol  &lt;- b[&quot;Std. Error&quot;]
+
+se_nol - se_full          # absolute change</code></pre>
+<pre><code>## Std. Error 
+## 0.07258129</code></pre>
+<pre class="r"><code>se_nol / se_full          # ratio</code></pre>
+<pre><code>## Std. Error 
+##   1.369941</code></pre>
+<div id="stats-for-ddpi" class="section level4">
+<h4>Stats for DDPI</h4>
+<table>
+<thead>
+<tr class="header">
+<th align="left"><strong>Model</strong></th>
+<th align="center"><strong>Estimate</strong></th>
+<th align="center"><strong>Std. Error</strong></th>
+<th align="center"><strong>Pr(&gt;|t|)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">full</td>
+<td align="center">0.4097</td>
+<td align="center">0.1962</td>
+<td align="center">0.0425</td>
+</tr>
+<tr class="even">
+<td align="left">no_libya</td>
+<td align="center">0.6103</td>
+<td align="center">0.2688</td>
+<td align="center">0.0281</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Change in SE</strong></p>
+<ul>
+<li><p>Absolute: 0.073</p></li>
+<li><p>Ratio: 1.37</p></li>
+</ul>
+</div>
 </div>
 <div id="c-why-the-rules-and-the-refit-disagree" class="section level2">
 <h2>(3c) Why the rules and the refit disagree</h2>
