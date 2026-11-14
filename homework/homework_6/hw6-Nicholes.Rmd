@@ -196,7 +196,6 @@ se_nol  <- b["Std. Error"]
 se_nol - se_full          # absolute change
 se_nol / se_full          # ratio
 
-
 ```
 #### Stats for DDPI
 | **Model** | **Estimate** | **Std. Error** | **Pr(>\|t\|)** |
@@ -209,6 +208,24 @@ se_nol / se_full          # ratio
 - Absolute: `r round(se_nol - se_full, 3)`
 
 - Ratio: `r round(se_nol / se_full, 3)`
+
+
+```{r}
+others <- life[rownames(LifeCycleSavings) != "Libya", "ddpi"]
+
+libya  <- life["Libya", "ddpi"]
+libya
+max(others)
+median(others)
+
+```
+
+- Libya's `ddpi`: `r libya`
+
+- Largest `ddpi`: `r max(others)`
+
+- Median `ddpi`: `r median(others)`
+
 
 ## (3c) Why the rules and the refit disagree
 

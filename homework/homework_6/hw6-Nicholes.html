@@ -1884,6 +1884,20 @@ se_nol - se_full          # absolute change</code></pre>
 <li><p>Absolute: 0.073</p></li>
 <li><p>Ratio: 1.37</p></li>
 </ul>
+<pre class="r"><code>others &lt;- life[rownames(LifeCycleSavings) != &quot;Libya&quot;, &quot;ddpi&quot;]
+
+libya  &lt;- life[&quot;Libya&quot;, &quot;ddpi&quot;]
+libya</code></pre>
+<pre><code>## [1] 16.71</code></pre>
+<pre class="r"><code>max(others)</code></pre>
+<pre><code>## [1] 10.23</code></pre>
+<pre class="r"><code>median(others)</code></pre>
+<pre><code>## [1] 2.99</code></pre>
+<ul>
+<li><p>Libya’s <code>ddpi</code>: 16.71</p></li>
+<li><p>Largest <code>ddpi</code>: 10.23</p></li>
+<li><p>Median <code>ddpi</code>: 2.99</p></li>
+</ul>
 </div>
 </div>
 <div id="c-why-the-rules-and-the-refit-disagree" class="section level2">
