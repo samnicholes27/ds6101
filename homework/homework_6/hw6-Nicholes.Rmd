@@ -211,7 +211,7 @@ se_nol / se_full          # ratio
 
 
 ```{r}
-others <- life[rownames(LifeCycleSavings) != "Libya", "ddpi"]
+others <- life[rownames(life) != "Libya", "ddpi"]
 
 libya  <- life["Libya", "ddpi"]
 libya
@@ -228,18 +228,95 @@ median(others)
 
 
 ## (3c) Why the rules and the refit disagree
+In the analysis, Libya did exceed the rule for 2p/n at `r round(p_exceed[1], 3)`, but did not have a large Cook's D value (`r round(d_largest[1], 3)`). Cook's D averages over all parameters, which could hide Libya's pull.
+I woud verify Libya's `ddpi` value of `r libya` to ensure the value is valid given the context. Both models should be reported. Only the magnitude differs between the two, but direction and significance don't change.
+
 
 # Part 4 · Brains and bodies (16 points)
 
 ## (4a) The raw scale
+```{r}
+mod_raw <- lm(brain ~ body, data = mammals)
+summary(mod_raw)
+
+
+a4_rsq <- summary(mod_raw)$r.squared          # R-squared
+a4_sprat <- spread_ratio(mod_raw)               # top-third SD / bottom-third SD of residuals
+
+a4_d <- cooks.distance(mod_raw)
+a4_d <- sort(a4_d, decreasing = TRUE)[1]
+
+```
+
+- R-squared: `r round(a4_rsq, 3)`
+
+- Spread Ratio: `r round(a4_sprat, 3)`
+
+- Largest Cooks Distance: `r names(a4_d[1])`, `r round(a4_d[1], 3)`
+
+```{r}
+
+plot(fitted(mod_raw), resid(mod_raw),
+     xlab = "Fitted brain weight (g)", ylab = "Residual (g)",
+     main = "Residuals vs fitted: brain ~ body")
+abline(h = 0, lty = 2)
+
+```
+
+The residuals cluster tightly around zero for small fitted values with a few extreme points, indicating heteroscedasticity (Spread Ratio: `r round(a4_sprat, 3)`)
 
 ## (4b) The log-log scale
 
+```{r}
+m_log <- lm(log(brain) ~ log(body), data = mammals)
+
+b4_coef <- coef(m_log)["log(body)"]            # slope
+b4_ci <- confint(m_log, "log(body)")         # 95% CI
+b4_rsq <- summary(m_log)$r.squared            # R-squared
+b4_sprat <- spread_ratio(m_log)                 # spread ratio
+
+b4_d <- cooks.distance(m_log)
+b4_d <- sort(b4_d, decreasing = TRUE)[1]   
+
+```
+
+| Statistic | Value |
+|:---|:---:|
+| Slope | `r round(unname(b4_coef), 3)` |
+| 95% CI | (`r round(b4_ci[1], 3)`, `r round(b4_ci[2], 3)`) |
+| R-Squared | `r round(b4_rsq, 3)` |
+| Spread Ratio | `r round(b4_sprat, 3)` |
+| Largest Cook's Distance | `r round(unname(b4_d), 3)` (`r names(b4_d)`) |
+
+
 ## (4c) Reading the slope
+According to the model, a 1% increase in body weight is associate with a `r round(unname(b4_coef), 3)*100`% increase in brain weight. The raw R-squared value reflects explained variance but not fit. The African Elephant sits farthest away, which comes as no surpise.
+
 
 # Part 5 · The variable you left out (16 points)
 
 ## (5a) The average estimates
+```{r}
+set.seed(6101)
+mod_short <- replicate(2000, {
+  z <- rnorm(100)                          # never recorded in a real study
+  x <- 0.6 * z + rnorm(100, 0, 0.8)
+  y <- 1 + 1 * x + 2 * z + rnorm(100, 0, 2)
+  lm(y ~ x)
+})
+
+mod_long <- replicate(2000, {
+  z <- rnorm(100)                          # never recorded in a real study
+  x <- 0.6 * z + rnorm(100, 0, 0.8)
+  y <- 1 + 1 * x + 2 * z + rnorm(100, 0, 2)
+  lm(y ~ x + z)
+})
+
+
+
+```
+
+
 
 ## (5b) Coverage
 
