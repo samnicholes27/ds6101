@@ -1,7 +1,7 @@
 ---
 title: "Homework 6"
 subtitle: "DATS 6101 · Fall 2026"
-author: "YOUR NAME"
+author: "Sam Nicholes"
 date: "`r Sys.Date()`"
 output:
   html_document:
