@@ -299,52 +299,92 @@ According to the model, a 1% increase in body weight is associate with a `r roun
 ```{r}
 set.seed(6101)
 mod_short <- replicate(2000, {
-  z <- rnorm(100)                          # never recorded in a real study
+  z <- rnorm(100)
   x <- 0.6 * z + rnorm(100, 0, 0.8)
   y <- 1 + 1 * x + 2 * z + rnorm(100, 0, 2)
   lm(y ~ x)
-})
+}, simplify = FALSE)
 
 mod_long <- replicate(2000, {
-  z <- rnorm(100)                          # never recorded in a real study
+  z <- rnorm(100)
   x <- 0.6 * z + rnorm(100, 0, 0.8)
   y <- 1 + 1 * x + 2 * z + rnorm(100, 0, 2)
   lm(y ~ x + z)
-})
+}, simplify = FALSE)
 
 
+coef_short <- sapply(mod_short, function(m) coef(m)["x"])
+coef_long  <- sapply(mod_long,  function(m) coef(m)["x"])
+
+mean(coef_short)
+mean(coef_long)
 
 ```
 
+Avg estimate coefficient for short model: `r round(mean(coef_short), 3)`
 
+Avg estimate coefficient for long model: `r round(mean(coef_long), 3)`
 
 ## (5b) Coverage
+```{r}
+covers <- function(m, truth = 1) {
+  ci <- confint(m, "x")
+  ci[1] <= truth && truth <= ci[2]
+}
+
+cover_short <- mean(sapply(mod_short, covers))
+cover_long  <- mean(sapply(mod_long,  covers))
+
+cover_short
+cover_long
+```
+
+Coverage for short model: `r cover_short`
+
+Coverage for long model: `r cover_long`
+
 
 ## (5c) Where the error comes from
+```{r}
+# Effect of z on y: the coefficient on z in each long model
+gamma_hat <- sapply(mod_long, function(m) coef(m)["z"])
+
+# Slope of z on x: regress z on x within each study's own data
+delta_hat <- sapply(mod_long, function(m) coef(lm(z ~ x, data = m$model))["x"])
+
+mean(gamma_hat)                      # about 2
+mean(delta_hat)                      # about 0.6
+bias_sim <- mean(gamma_hat) * mean(delta_hat)   # about 1.2
+bias_sim
+
+bias_tab <- c(from_simulations = bias_sim,
+              from_parameters  = 2 * 0.6,
+              measured_bias    = mean(coef_short) - 1)
+
+```
+| Source | Bias in short-model slope |
+|:---|:---:|
+| From simulations | `r round(bias_tab["from_simulations"], 3)` |
+| From parameters | `r round(bias_tab["from_parameters"], 3)` |
+| Measured | `r round(bias_tab["measured_bias"], 3)` |
+
+
+No. The error in the short model is `r round(bias_tab["from_parameters"], 3)` and depends on the z’s effect and its relationship to x and not n. With 10,000 observations the standard error would shrink, so the estimates would not cluster around 1, and the CIs would almost always exclude the true value.
+This is the same problem in 1c. We can't conclude that lowering `pop15` would increase savings because any omitted variables that are correlated with `pop15` may result in bias. The simulation shows that this bias does not disappear with larger samples. Only measuring the missing variables or experimentally assigning `pop15` could address the problem.
 
 # Part 6 · The report (12 points)
 
 ## (6a) The sentence about ddpi
+Comparing countries with the same shares of population under 15 and over 75 and the same `dpi`, a 1% increase in `ddpi` is associated with a savings rate that is `r round(a[1], 2)`% points higher across all 50 countries and `r round(b[1], 2)` points higher across the 49 countries excluding Libya. The two estimates differ by about one standard error because Libya, with a growth rate of `r libya` against a next-highest value of `r max(others)` (median `r median(others)`), has a hat value of `r round(h["Libya"], 3)`, the largest of the 50 countries, so the size of the association depends on a single country.
 
 ## (6b) Two sentences that are wrong
 
+- 1) “A one point increase in `pop15` causes the savings rate to fall by `r abs(round(a1_coeff, 3))` points.” This sentences draws a causal relationship when it's only an association. 
+
+- 2) “R-squared = `r round(a1_rsq, 3)`, so `r round(a1_rsq, 3)*100`% of savings is caused by these four variables.” This sentences interprets R-squared as easuring a causal influence of the covariates on savings rate. R-squared shows the amoung of variance explained in y given the covariates as captured in this data set.
+
 # AI disclosure
 
-<!--
-Keep ONE of the two blocks below and delete the other.
-"I did not use an AI assistant" is always acceptable and earns full marks.
--->
-
 ## Prompt log
+https://claude.ai/share/51da05a1-3385-4986-a889-1a2dc9eb8f9e
 
-## Critique
-
-*150-300 words. Either name something the assistant got wrong and what it would
-have cost, or show the prompts you used trying to break it when it held up.
-Both earn full marks.*
-
-<!-- OR, replacing both sections above:
-
-I did not use an AI assistant on this assignment.
-
--->

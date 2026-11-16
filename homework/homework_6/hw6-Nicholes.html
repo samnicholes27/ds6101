@@ -2007,42 +2007,138 @@ which comes as no surpise.</p>
 <h1>Part 5 · The variable you left out (16 points)</h1>
 <div id="a-the-average-estimates" class="section level2">
 <h2>(5a) The average estimates</h2>
+<pre class="r"><code>set.seed(6101)
+mod_short &lt;- replicate(2000, {
+  z &lt;- rnorm(100)
+  x &lt;- 0.6 * z + rnorm(100, 0, 0.8)
+  y &lt;- 1 + 1 * x + 2 * z + rnorm(100, 0, 2)
+  lm(y ~ x)
+}, simplify = FALSE)
+
+mod_long &lt;- replicate(2000, {
+  z &lt;- rnorm(100)
+  x &lt;- 0.6 * z + rnorm(100, 0, 0.8)
+  y &lt;- 1 + 1 * x + 2 * z + rnorm(100, 0, 2)
+  lm(y ~ x + z)
+}, simplify = FALSE)
+
+
+coef_short &lt;- sapply(mod_short, function(m) coef(m)[&quot;x&quot;])
+coef_long  &lt;- sapply(mod_long,  function(m) coef(m)[&quot;x&quot;])
+
+mean(coef_short)</code></pre>
+<pre><code>## [1] 2.196386</code></pre>
+<pre class="r"><code>mean(coef_long)</code></pre>
+<pre><code>## [1] 0.9912983</code></pre>
+<p>Avg estimate coefficient for short model: 2.196</p>
+<p>Avg estimate coefficient for long model: 0.991</p>
 </div>
 <div id="b-coverage" class="section level2">
 <h2>(5b) Coverage</h2>
+<pre class="r"><code>covers &lt;- function(m, truth = 1) {
+  ci &lt;- confint(m, &quot;x&quot;)
+  ci[1] &lt;= truth &amp;&amp; truth &lt;= ci[2]
+}
+
+cover_short &lt;- mean(sapply(mod_short, covers))
+cover_long  &lt;- mean(sapply(mod_long,  covers))
+
+cover_short</code></pre>
+<pre><code>## [1] 0.005</code></pre>
+<pre class="r"><code>cover_long</code></pre>
+<pre><code>## [1] 0.95</code></pre>
+<p>Coverage for short model: 0.005</p>
+<p>Coverage for long model: 0.95</p>
 </div>
 <div id="c-where-the-error-comes-from" class="section level2">
 <h2>(5c) Where the error comes from</h2>
+<pre class="r"><code># Effect of z on y: the coefficient on z in each long model
+gamma_hat &lt;- sapply(mod_long, function(m) coef(m)[&quot;z&quot;])
+
+# Slope of z on x: regress z on x within each study&#39;s own data
+delta_hat &lt;- sapply(mod_long, function(m) coef(lm(z ~ x, data = m$model))[&quot;x&quot;])
+
+mean(gamma_hat)                      # about 2</code></pre>
+<pre><code>## [1] 1.997469</code></pre>
+<pre class="r"><code>mean(delta_hat)                      # about 0.6</code></pre>
+<pre><code>## [1] 0.5997319</code></pre>
+<pre class="r"><code>bias_sim &lt;- mean(gamma_hat) * mean(delta_hat)   # about 1.2
+bias_sim</code></pre>
+<pre><code>## [1] 1.197946</code></pre>
+<pre class="r"><code>bias_tab &lt;- c(from_simulations = bias_sim,
+              from_parameters  = 2 * 0.6,
+              measured_bias    = mean(coef_short) - 1)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Source</th>
+<th align="center">Bias in short-model slope</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">From simulations</td>
+<td align="center">1.198</td>
+</tr>
+<tr class="even">
+<td align="left">From parameters</td>
+<td align="center">1.2</td>
+</tr>
+<tr class="odd">
+<td align="left">Measured</td>
+<td align="center">1.196</td>
+</tr>
+</tbody>
+</table>
+<p>No. The error in the short model is 1.2 and depends on the z’s effect
+and its relationship to x and not n. With 10,000 observations the
+standard error would shrink, so the estimates would not cluster around
+1, and the CIs would almost always exclude the true value. This is the
+same problem in 1c. We can’t conclude that lowering <code>pop15</code>
+would increase savings because any omitted variables that are correlated
+with <code>pop15</code> may result in bias. The simulation shows that
+this bias does not disappear with larger samples. Only measuring the
+missing variables or experimentally assigning <code>pop15</code> could
+address the problem.</p>
 </div>
 </div>
 <div id="part-6-the-report-12-points" class="section level1">
 <h1>Part 6 · The report (12 points)</h1>
 <div id="a-the-sentence-about-ddpi" class="section level2">
 <h2>(6a) The sentence about ddpi</h2>
+<p>Comparing countries with the same shares of population under 15 and
+over 75 and the same <code>dpi</code>, a 1% increase in
+<code>ddpi</code> is associated with a savings rate that is 0.41% points
+higher across all 50 countries and 0.61 points higher across the 49
+countries excluding Libya. The two estimates differ by about one
+standard error because Libya, with a growth rate of 16.71 against a
+next-highest value of 10.23 (median 2.99), has a hat value of 0.531, the
+largest of the 50 countries, so the size of the association depends on a
+single country.</p>
 </div>
 <div id="b-two-sentences-that-are-wrong" class="section level2">
 <h2>(6b) Two sentences that are wrong</h2>
+<ul>
+<li><ol style="list-style-type: decimal">
+<li>“A one point increase in <code>pop15</code> causes the savings rate
+to fall by 0.461 points.” This sentences draws a causal relationship
+when it’s only an association.</li>
+</ol></li>
+<li><ol start="2" style="list-style-type: decimal">
+<li>“R-squared = 0.338, so 33.8% of savings is caused by these four
+variables.” This sentences interprets R-squared as easuring a causal
+influence of the covariates on savings rate. R-squared shows the amoung
+of variance explained in y given the covariates as captured in this data
+set.</li>
+</ol></li>
+</ul>
 </div>
 </div>
 <div id="ai-disclosure" class="section level1">
 <h1>AI disclosure</h1>
-<!--
-Keep ONE of the two blocks below and delete the other.
-"I did not use an AI assistant" is always acceptable and earns full marks.
--->
 <div id="prompt-log" class="section level2">
 <h2>Prompt log</h2>
-</div>
-<div id="critique" class="section level2">
-<h2>Critique</h2>
-<p><em>150-300 words. Either name something the assistant got wrong and
-what it would have cost, or show the prompts you used trying to break it
-when it held up. Both earn full marks.</em></p>
-<!-- OR, replacing both sections above:
-
-I did not use an AI assistant on this assignment.
-
--->
+<p><a href="https://claude.ai/share/51da05a1-3385-4986-a889-1a2dc9eb8f9e" class="uri">https://claude.ai/share/51da05a1-3385-4986-a889-1a2dc9eb8f9e</a></p>
 </div>
 </div>
 
