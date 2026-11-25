@@ -114,10 +114,29 @@ The Prediction Interval answers the visitor's question. It describes the range o
 # Part 2 · A median with no formula (16 points)
 
 ## (a) Mean, median and histogram
+```{r}
+mean_river <- mean(river_miles)
+median_river <- median(river_miles)
+
+hist(river_miles)
+```
+
+The mean is: `r round(mean_river, 3)`
+
+The median is: `r round(median_river, 3)`
+
+The mean and median are far apart because of the right skew in the data - the rivers that are several thousand miles long.
+
 
 ## (b) Bootstrapping the mean and the median
+```{r}
+set.seed(6101)
+
+```
+
 
 ## (c) Why the medians are lumpy
+
 
 # Part 3 · The longest river (12 points)
 
