@@ -1,0 +1,173 @@
+---
+title: "Homework 7"
+subtitle: "DATS 6101 · Fall 2026"
+author: "Sam Nicholes"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+library(tidyverse)
+
+```
+
+```{r data}
+# 272 eruptions of Old Faithful: eruption length and wait to the next (minutes).
+geyser_data <- faithful
+
+# Lengths, in miles, of 141 major North American rivers (a vector).
+river_miles <- rivers
+
+# 1,000 earthquakes near Fiji, magnitude 4.0 and up, with the number of
+# stations that reported each one.
+quake_data <- quakes
+
+# Ten patients, two sleeping drugs each: extra hours of sleep.
+sleep_data <- sleep
+
+# The spread ratio: residual SD in the top third of fitted values
+# over the bottom third. Near 1 means the spread is even.
+spread_ratio <- function(m) {
+  third <- cut(fitted(m), quantile(fitted(m), 0:3 / 3), include.lowest = TRUE)
+  s <- tapply(resid(m), third, sd)
+  s[[3]] / s[[1]]
+}
+# ~ 1: the spread is even across predictions
+# > 1: residuals fan out as predictions grow, the classic funnel.
+# < 1: residuals shrink as predictions grow.
+
+```
+
+<!--
+The definitions are on the assignment page, and your numbers are checked against
+them, so use them exactly:
+
+  every loop         one replicate(), with set.seed(6101) on the line before it
+  how many           5,000 for a statistic, 2,000 when each resample refits a
+                     model, 10,000 shuffles for a permutation test
+  a resample         sample(x, replace = TRUE), or d[sample(nrow(d), replace = TRUE), ]
+  bootstrap SE       sd() of the resampled statistics
+  95% interval       quantile(boot, c(0.025, 0.975))
+  permutation p      mean(abs(perm) >= abs(observed)), two-sided
+
+Before you submit: Session > Restart R, then Knit. Every number you state in
+prose must come from inline R code, like this: `r length(river_miles)` rivers.
+-->
+
+# Part 1 · One eruption, or the average eruption (14 points)
+
+## (1a) The two intervals at 4 minutes
+```{r}
+geyser <- lm(waiting ~ eruptions, data = faithful)
+
+# predict wait time for eruption = 4 minutes
+geyser_erupt_4 <- data.frame(eruptions = 4)
+geyser_wait <- predict(geyser, newdata = geyser_erupt_4)
+
+geyser_ci <- predict(geyser, newdata = geyser_erupt_4, interval = "confidence")
+# CI - interval to capture the true average value at confidence
+geyser_pi <- predict(geyser, newdata = geyser_erupt_4, interval = "prediction")
+# PI - interval to capture the predicted value at confidence. Wider than CI because of added residual variance
+
+
+```
+
+Predicted wait time for an eruption that lasted 4 minutes: `r round(geyser_wait, 3)`
+
+95% CI for wait time: `r round(geyser_ci[2:3], 3)`. This interval will capture the true average wait time for a 4 minute eruption 95% of the time.
+
+95% PI for wait time: `r round(geyser_pi[2:3], 3)`. This interval will capture the predicted wait time for a 4 minute eruption 95% of the time.
+
+
+## (1b) Checking them against the eruptions near 4 minutes
+
+```{r}
+geyser_data_4 <- subset(faithful, eruptions >= 3.8 & eruptions <= 4.2)
+geyser_count_4 <- nrow(geyser_data_4) # How many
+
+# wait times in respective intervals?
+in_ci <- geyser_data_4$waiting >= geyser_ci[, "lwr"] & geyser_data_4$waiting <= geyser_ci[, "upr"]
+in_pi <- geyser_data_4$waiting >= geyser_pi[, "lwr"] & geyser_data_4$waiting <= geyser_pi[, "upr"]
+
+# share inside each interval
+geyser_share_ci <- mean(in_ci)
+geyser_share_pi <- mean(in_pi)
+
+```
+
+Count of eruptions lasting about 4 minutes: `r geyser_count_4 `
+
+Share of wait times that fall within the CI: `r round(geyser_share_ci, 3)`
+
+Share of wait times that fall within the PI: `r round(geyser_share_pi, 3)`
+
+## (1c) Which interval answers the visitor
+The Prediction Interval answers the visitor's question. It describes the range of predicted values based on observed eruption times. The Confidence Interval is meant to describe the interval that could capture the average wait time of a 4 minute eruption. In part b, it shows which wait times fall in the interval meant to capture the average value, the Confidence Interval.
+
+
+# Part 2 · A median with no formula (16 points)
+
+## (a) Mean, median and histogram
+
+## (b) Bootstrapping the mean and the median
+
+## (c) Why the medians are lumpy
+
+# Part 3 · The longest river (12 points)
+
+## (a) Bootstrapping the maximum
+
+## (b) The probability of resampling the maximum
+
+## (c) What the interval can and cannot say
+
+# Part 4 · A slope when the spread fans out (16 points)
+
+## (a) The formula's slope, and the residuals
+
+## (b) Bootstrapping the slope
+
+## (c) Which standard error, and what the bootstrap cannot fix
+
+# Part 5 · Ten patients, twice (16 points)
+
+## (a) Shuffling all 20 labels
+
+## (b) Flipping signs within patients
+
+## (c) Which test is right
+
+# Part 6 · Bootstrap or permutation, and the report (16 points)
+
+## (a) An interval for the difference
+
+## (b) Three sentences for a report
+
+## (c) Two sentences that are wrong
+
+# AI disclosure
+
+<!--
+Keep ONE of the two blocks below and delete the other.
+"I did not use an AI assistant" is always acceptable and earns full marks.
+-->
+
+## Prompt log
+
+## Critique
+
+*150-300 words. Either name something the assistant got wrong and what it would
+have cost, or show the prompts you used trying to break it when it held up.
+Both earn full marks.*
+
+<!-- OR, replacing both sections above:
+
+I did not use an AI assistant on this assignment.
+
+-->
